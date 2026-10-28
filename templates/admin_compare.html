@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estacle | Admin – Compare Properties</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head><body>
+<div class="app-layout">
+{% set active = 'compare' %}
+{% include 'partials/admin_sidebar.html' %}
+<main class="main-content">
+<header class="top-bar"><div><h1 class="page-title">Compare Properties</h1><p class="page-subtitle">Select up to 4 listings side by side</p></div></header>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+{% endwith %}
+
+<form method="GET" style="padding:0 32px 20px">
+<div style="display:flex;flex-wrap:wrap;gap:12px;align-items:end">
+{% for i in range(4) %}
+<div class="form-group" style="min-width:180px">
+<label>Property {{ i+1 }}</label>
+<select name="ids">
+<option value="">—</option>
+{% for p in all_props %}<option value="{{ p.id }}">{{ p.title }}</option>{% endfor %}
+</select>
+</div>
+{% endfor %}
+<button class="btn-primary" type="submit">Compare</button>
+</div>
+</form>
+{% if props %}
+<div style="padding:0 32px 32px;overflow-x:auto">
+<table style="width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:12px;border-collapse:collapse">
+<thead><tr>
+<th style="padding:12px;text-align:left;border-bottom:1px solid #e2e8f0">Field</th>
+{% for p in props %}<th style="padding:12px;text-align:left;border-bottom:1px solid #e2e8f0">{{ p.title }}</th>{% endfor %}
+</tr></thead>
+<tbody>
+{% set fields = [('Price', 'price'), ('Type', 'property_type'), ('Listing', 'listing_type'), ('Status', 'status'),
+('City', 'city'), ('Beds', 'bedrooms'), ('Baths', 'bathrooms'), ('Area sqft', 'area_sqft'), ('Furnishing', 'furnishing')] %}
+{% for label, key in fields %}
+<tr>
+<td style="padding:10px 12px;color:#64748b;border-bottom:1px solid #f1f5f9">{{ label }}</td>
+{% for p in props %}
+<td style="padding:10px 12px;border-bottom:1px solid #f1f5f9;font-weight:600">
+{% if key == 'price' %}{{ format_money(p[key], currency) }}{% else %}{{ p[key] or '—' }}{% endif %}
+</td>
+{% endfor %}
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+{% endif %}
+
+</main></div></body></html>

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estacle | Admin – Tasks</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+{% set active = 'tasks' %}
+{% include 'partials/admin_sidebar.html' %}
+<main class="main-content">
+<header class="top-bar">
+<div><h1 class="page-title">Tasks</h1><p class="page-subtitle">Follow-ups and to-dos</p></div>
+<a href="{{ url_for('admin.admin_add_task') }}" class="btn-primary">Add Task</a>
+</header>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+{% endwith %}
+
+<div class="panel full"><div class="table-wrap"><table>
+<thead><tr><th>Title</th><th>Assignee</th><th>Due</th><th>Priority</th><th>Status</th><th>Client</th><th>Property</th><th>Action</th></tr></thead>
+<tbody>
+{% for t in tasks %}
+<tr>
+<td>{{ t.title }}</td>
+<td>{{ t.assignee_name or '—' }}</td>
+<td>{{ t.due_date or '—' }}</td>
+<td><span class="badge badge-{{ t.priority }}">{{ t.priority }}</span></td>
+<td>
+<form method="POST" action="{{ url_for('admin.admin_task_status', task_id=t.id) }}" style="display:inline">
+<select name="status" class="status-select" onchange="this.form.submit()">
+<option value="pending" {% if t.status=='pending' %}selected{% endif %}>Pending</option>
+<option value="in_progress" {% if t.status=='in_progress' %}selected{% endif %}>In progress</option>
+<option value="done" {% if t.status=='done' %}selected{% endif %}>Done</option>
+<option value="cancelled" {% if t.status=='cancelled' %}selected{% endif %}>Cancelled</option>
+</select></form>
+</td>
+<td>{{ t.client_name or '—' }}</td>
+<td>{{ t.property_title or '—' }}</td>
+<td><form method="POST" action="{{ url_for('admin.admin_delete_task', task_id=t.id) }}" style="display:inline" onsubmit="return confirm('Delete?')"><button class="btn-sm btn-danger" type="submit">Delete</button></form></td>
+</tr>
+{% else %}<tr><td colspan="8" class="empty">No tasks yet</td></tr>{% endfor %}
+</tbody></table></div></div>
+
+</main>
+</div>
+</body>
+</html>

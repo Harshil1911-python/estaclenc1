@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estacle | Admin – Documents</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+{% set active = 'documents' %}
+{% include 'partials/admin_sidebar.html' %}
+<main class="main-content">
+<header class="top-bar">
+<div><h1 class="page-title">Documents</h1><p class="page-subtitle">Agreements and expiry tracking</p></div>
+<a href="{{ url_for('admin.admin_add_document') }}" class="btn-primary">Add Document</a>
+</header>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+{% endwith %}
+
+<div class="panel full"><div class="table-wrap"><table>
+<thead><tr><th>Title</th><th>Type</th><th>Related</th><th>Expiry</th><th>Added by</th><th>Action</th></tr></thead>
+<tbody>
+{% for d in docs %}
+<tr>
+<td>{{ d.title }}</td>
+<td>{{ d.doc_type or '—' }}</td>
+<td>{{ d.related_type or '—' }} {% if d.related_id %}#{{ d.related_id }}{% endif %}</td>
+<td>{{ d.expiry_date or '—' }}</td>
+<td>{{ d.creator_name or '—' }}</td>
+<td><form method="POST" action="{{ url_for('admin.admin_delete_document', doc_id=d.id) }}" style="display:inline" onsubmit="return confirm('Delete?')"><button class="btn-sm btn-danger" type="submit">Delete</button></form></td>
+</tr>
+{% else %}<tr><td colspan="6" class="empty">No documents yet</td></tr>{% endfor %}
+</tbody></table></div></div>
+
+</main>
+</div>
+</body>
+</html>

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estacle | Admin – Add Deal</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+{% set active = 'add_deal' %}
+{% include 'partials/admin_sidebar.html' %}
+<main class="main-content">
+<header class="top-bar">
+<div><h1 class="page-title">Add Deal</h1><p class="page-subtitle">Start a new deal in the pipeline</p></div>
+
+</header>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+{% endwith %}
+
+<div class="form-page-hero"><h2>New deal</h2><p>Track offer value, stage, and expected commission.</p></div>
+<div class="panel form-panel"><form method="POST" class="admin-form">
+<div class="form-group"><label>Title *</label><input name="title" required placeholder="e.g. 123 Main St – Smith offer"></div>
+<div class="form-row">
+<div class="form-group"><label>Property</label><select name="property_id"><option value="">—</option>{% for p in properties %}<option value="{{ p.id }}">{{ p.title }}</option>{% endfor %}</select></div>
+<div class="form-group"><label>Client</label><select name="client_id"><option value="">—</option>{% for c in clients %}<option value="{{ c.id }}">{{ c.full_name }}</option>{% endfor %}</select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>Agent</label><select name="agent_id"><option value="">—</option>{% for a in agents %}<option value="{{ a.id }}">{{ a.full_name }}</option>{% endfor %}</select></div>
+<div class="form-group"><label>Stage</label><select name="stage"><option value="offer">Offer</option><option value="negotiation">Negotiation</option><option value="under_contract">Under contract</option><option value="closed">Closed</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>Deal value ($)</label><input type="number" name="value" step="0.01" placeholder="500000"></div>
+<div class="form-group"><label>Commission rate (%)</label><input type="number" name="commission_rate" step="0.1" value="2.5"></div>
+</div>
+<div class="form-group"><label>Expected close</label><input type="date" name="expected_close"></div>
+<div class="form-group"><label>Notes</label><textarea name="notes"></textarea></div>
+<div class="form-actions"><button class="btn-primary" type="submit">Create Deal</button><a href="{{ url_for('admin.admin_deals') }}" class="btn-secondary">Cancel</a></div>
+</form></div>
+
+</main>
+</div>
+</body>
+</html>

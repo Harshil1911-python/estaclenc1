@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estacle | Admin – Leads</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head><body>
+<div class="app-layout">
+{% set active = 'leads' %}
+{% include 'partials/admin_sidebar.html' %}
+<main class="main-content">
+<header class="top-bar"><div><h1 class="page-title">Leads</h1><p class="page-subtitle">Inbound inquiries and sales leads</p></div><a href="{{ url_for('admin.admin_add_lead') }}" class="btn-primary">Add Lead</a></header>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+{% endwith %}
+
+<div class="panel full"><div class="table-wrap"><table>
+<thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Source</th><th>Interest</th><th>Budget</th><th>Agent</th><th>Status</th><th></th></tr></thead>
+<tbody>
+{% for l in leads %}
+<tr>
+<td>{{ l.full_name }}</td><td>{{ l.email or '—' }}</td><td>{{ l.phone or '—' }}</td>
+<td>{{ l.source or '—' }}</td><td>{{ l.interest or '—' }}</td><td>{{ l.budget or '—' }}</td>
+<td>{{ l.agent_name or '—' }}</td>
+<td><form method="POST" action="{{ url_for('admin.admin_lead_status', lead_id=l.id) }}" style="display:inline">
+<select name="status" class="status-select" onchange="this.form.submit()">
+{% for s in ['new','contacted','qualified','converted','lost'] %}
+<option value="{{ s }}" {% if l.status==s %}selected{% endif %}>{{ s }}</option>
+{% endfor %}
+</select></form></td>
+<td><form method="POST" action="{{ url_for('admin.admin_delete_lead', lead_id=l.id) }}" onsubmit="return confirm('Delete?')"><button class="btn-sm btn-danger" type="submit">Delete</button></form></td>
+</tr>
+{% else %}<tr><td colspan="9" class="empty">No leads yet</td></tr>{% endfor %}
+</tbody></table></div></div>
+
+</main></div></body></html>

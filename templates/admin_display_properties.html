@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estacle | Display Properties</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .display-layout { display: flex; gap: 0; margin-left: 268px; min-height: 100vh; }
+        .filter-panel {
+            width: 260px; flex-shrink: 0;
+            background: #fff;
+            border-right: 1px solid #e2e8f0;
+            box-shadow: 2px 0 12px rgba(15,23,42,.04);
+            padding: 20px 16px;
+            position: sticky; top: 0; height: 100vh; overflow-y: auto;
+        }
+        .filter-panel h2 { font-size: 14px; font-weight: 700; margin-bottom: 14px; color: #0f172a; }
+        .filter-group { margin-bottom: 14px; }
+        .filter-group label { display: block; font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .4px; margin-bottom: 5px; }
+        .filter-group input, .filter-group select {
+            width: 100%; padding: 9px 11px; border: 1.5px solid #e2e8f0; border-radius: 8px;
+            font-size: 13px; font-family: inherit; background: #f8fafc;
+        }
+        .filter-group input:focus, .filter-group select:focus { outline: none; border-color: #3b82f6; background: #fff; }
+        .range-row { display: flex; gap: 6px; align-items: center; }
+        .range-row input { flex: 1; }
+        .filter-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; }
+        .filter-count { text-align: center; font-size: 13px; color: #64748b; margin-top: 12px; }
+        .filter-count strong { color: #2563eb; font-size: 16px; }
+
+        .display-main { flex: 1; padding: 24px 28px 40px; background: #f1f5f9; }
+        .display-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 22px; }
+        .display-header h1 { font-size: 22px; font-weight: 700; letter-spacing: -.3px; }
+        .display-header .badge-currency { background: #eff6ff; color: #2563eb; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 8px; }
+
+        .prop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .prop-card {
+            background: #fff; border-radius: 14px; overflow: hidden;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(15,23,42,.04);
+            transition: transform .2s, box-shadow .2s;
+            text-decoration: none; color: inherit; display: block;
+        }
+        .prop-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(37,99,235,.12); }
+        .card-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; background: #e2e8f0; }
+        .card-no-img { width: 100%; aspect-ratio: 4/3; background: linear-gradient(135deg,#dbeafe,#eff6ff); display: flex; align-items: center; justify-content: center; color: #93c5fd; font-size: 13px; font-weight: 600; }
+        .card-body { padding: 14px 16px 16px; }
+        .card-id { font-size: 11px; font-weight: 600; color: #2563eb; letter-spacing: .3px; margin-bottom: 2px; }
+        .card-title { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-sub { font-size: 12.5px; color: #64748b; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+        .card-tags span { background: #f1f5f9; color: #475569; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 5px; text-transform: capitalize; }
+        .card-tags span.sale { background: #dbeafe; color: #1d4ed8; }
+        .card-tags span.rent { background: #dcfce7; color: #15803d; }
+        .card-price { font-size: 16px; font-weight: 700; color: #2563eb; }
+        .empty-display { grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #94a3b8; }
+
+        /* Hide default sidebar margin conflict - display page uses its own layout beside admin sidebar */
+        body.display-page .main-content { display: none; }
+        @media (max-width: 900px) {
+            .display-layout { flex-direction: column; margin-left: 68px; }
+            .filter-panel { width: 100%; height: auto; position: relative; border-right: none; border-bottom: 1px solid #e2e8f0; }
+        }
+    </style>
+</head>
+<body class="display-page">
+<div class="app-layout">
+    {% set active = 'display_properties' %}
+    {% include 'partials/admin_sidebar.html' %}
+
+    <div class="display-layout">
+        <aside class="filter-panel">
+            <h2>Filters</h2>
+            <form method="GET" action="{{ url_for('admin.admin_display_properties') }}">
+                <div class="filter-group">
+                    <label>Search</label>
+                    <input type="text" name="q" value="{{ filters.q }}" placeholder="Name, city, address…">
+                </div>
+                <div class="filter-group">
+                    <label>Listing</label>
+                    <select name="listing_type">
+                        <option value="">All</option>
+                        <option value="sale" {% if filters.listing_type == 'sale' %}selected{% endif %}>For Sale</option>
+                        <option value="rent" {% if filters.listing_type == 'rent' %}selected{% endif %}>For Rent</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Property type</label>
+                    <select name="property_type">
+                        <option value="">All</option>
+                        {% for t in ['apartment','house','villa','condo','townhouse','land','commercial'] %}
+                        <option value="{{ t }}" {% if filters.property_type == t %}selected{% endif %}>{{ t|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Status</label>
+                    <select name="status">
+                        <option value="">All</option>
+                        {% for s in ['available','under_offer','sold','rented'] %}
+                        <option value="{{ s }}" {% if filters.status == s %}selected{% endif %}>{{ s.replace('_',' ')|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>City</label>
+                    <input type="text" name="city" value="{{ filters.city }}" placeholder="e.g. Dubai, Mumbai">
+                </div>
+                <div class="filter-group">
+                    <label>Price range ({{ currency }})</label>
+                    <div class="range-row">
+                        <input type="number" name="pmin" value="{{ filters.pmin }}" placeholder="Min">
+                        <span style="color:#94a3b8">—</span>
+                        <input type="number" name="pmax" value="{{ filters.pmax }}" placeholder="Max">
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label>Bedrooms</label>
+                    <select name="beds">
+                        <option value="">Any</option>
+                        {% for b in [1,2,3,4,5] %}
+                        <option value="{{ b }}" {% if filters.beds == b|string %}selected{% endif %}>{{ b }}+</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-primary" style="width:100%;justify-content:center">Apply filters</button>
+                    <a href="{{ url_for('admin.admin_display_properties') }}" class="btn-secondary" style="width:100%;justify-content:center;text-align:center">Clear all</a>
+                </div>
+                <div class="filter-count">Found: <strong>{{ properties|length }}</strong></div>
+            </form>
+        </aside>
+
+        <div class="display-main">
+            <div class="display-header">
+                <h1>Display Properties</h1>
+                <div style="display:flex;gap:10px;align-items:center">
+                    <span class="badge-currency">{{ currency }}</span>
+                    <a href="{{ url_for('admin.admin_add_property') }}" class="btn-primary">Add Property</a>
+                </div>
+            </div>
+
+            <div class="prop-grid">
+                {% for p in properties %}
+                {% set photos = (p.photos or '').split(',') if p.photos else [] %}
+                {% set cover = photos[0].strip() if photos and photos[0].strip() else None %}
+                <a href="{{ url_for('admin.admin_property_detail', prop_id=p.id) }}" class="prop-card">
+                    {% if cover %}
+                    <img class="card-img" src="{{ url_for('static', filename='uploads/properties/' + cover) }}" alt="{{ p.title }}">
+                    {% else %}
+                    <div class="card-no-img">No photo</div>
+                    {% endif %}
+                    <div class="card-body">
+                        <div class="card-id">#{{ p.id }}</div>
+                        <div class="card-title">{{ p.title }}</div>
+                        <div class="card-sub">{{ p.city or '—' }}{% if p.bedrooms %} · {{ p.bedrooms }} bed{% endif %}{% if p.area_sqft %} · {{ p.area_sqft }} sqft{% endif %}</div>
+                        <div class="card-tags">
+                            <span class="{{ p.listing_type or 'sale' }}">{{ p.listing_type or 'sale' }}</span>
+                            <span>{{ p.property_type }}</span>
+                            <span>{{ p.status }}</span>
+                        </div>
+                        <div class="card-price">{{ format_money(p.price, currency) }}</div>
+                    </div>
+                </a>
+                {% else %}
+                <div class="empty-display">
+                    <p style="font-size:15px;font-weight:600;margin-bottom:6px">No properties match</p>
+                    <p style="font-size:13px">Try clearing filters or add a new listing.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

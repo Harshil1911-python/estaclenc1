@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estacle | My Profile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+    {% set active = 'profile' %}
+    {% include 'partials/client_sidebar.html' %}
+    <main class="main-content">
+        <header class="top-bar">
+            <div>
+                <h1 class="page-title">My Profile</h1>
+                <p class="page-subtitle">Update your contact details</p>
+            </div>
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+        {% endwith %}
+        <div class="panel form-panel">
+            <form method="POST" class="admin-form">
+                <div class="form-group"><label>Full name *</label><input name="full_name" value="{{ user.full_name }}" required></div>
+                <div class="form-group"><label>Email</label><input value="{{ user.email }}" disabled><span class="form-hint">Email cannot be changed here</span></div>
+                <div class="form-group"><label>Phone</label><input name="phone" value="{{ user.phone or '' }}"></div>
+                <div class="form-group"><label>New password</label><input type="password" name="password" placeholder="Leave blank to keep current" minlength="6"></div>
+                <button type="submit" class="btn-primary">Save profile</button>
+            </form>
+        </div>
+    </main>
+</div>
+</body>
+</html>

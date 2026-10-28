@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Dashboard – Estacle</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .agent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 0 28px 32px; }
+        .panel h3 { font-size: 14px; font-weight: 600; margin-bottom: 14px; color: #0f172a; }
+        .mini-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .mini-table th { text-align: left; padding: 8px 6px; color: #64748b; font-weight: 500; border-bottom: 1px solid #e2e8f0; }
+        .mini-table td { padding: 9px 6px; border-bottom: 1px solid #f1f5f9; }
+        .badge-sm { font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 500; }
+        .badge-available { background: #dcfce7; color: #166534; }
+        .badge-sold, .badge-rented { background: #fee2e2; color: #991b1b; }
+        .badge-under_offer { background: #fef3c7; color: #92400e; }
+        .badge-pending { background: #e0e7ff; color: #3730a3; }
+        .badge-high { background: #fee2e2; color: #991b1b; }
+        .badge-medium { background: #fef3c7; color: #92400e; }
+        .badge-low { background: #f1f5f9; color: #475569; }
+        .empty-row { color: #94a3b8; font-size: 13px; padding: 16px 0; }
+        @media (max-width: 900px) { .agent-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Estacle" class="sidebar-logo">
+                <span>Estacle</span>
+            </div>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('agent.agent_dashboard') }}" class="nav-item active"><span class="nav-icon">📊</span> Dashboard</a>
+            <a href="{{ url_for('agent.agent_properties') }}" class="nav-item"><span class="nav-icon">🏠</span> My Properties</a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <div class="user-avatar">{{ session.full_name[0] }}</div>
+                <div class="user-details">
+                    <div class="user-name">{{ session.full_name }}</div>
+                    <div class="user-role">Agent</div>
+                </div>
+            </div>
+            <a href="{{ url_for('auth.logout') }}" class="logout-btn">Logout</a>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="top-bar">
+            <div>
+                <h1 class="page-title">Agent Dashboard</h1>
+                <p class="page-subtitle">Welcome back, {{ session.full_name.split()[0] }}</p>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="stats-grid" style="padding: 0 28px 20px;">
+            <div class="stat-card">
+                <div class="stat-icon blue">🏠</div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ stats.my_properties }}</div>
+                    <div class="stat-label">My Properties</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">✅</div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ stats.available }}</div>
+                    <div class="stat-label">Available</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">👥</div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ stats.my_clients }}</div>
+                    <div class="stat-label">My Clients</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon orange">📅</div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ stats.appointments }}</div>
+                    <div class="stat-label">Appointments</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon blue">📋</div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ stats.pending_tasks }}</div>
+                    <div class="stat-label">Pending Tasks</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">💰</div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ stats.open_deals }}</div>
+                    <div class="stat-label">Open Deals</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon purple">🎯</div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ stats.new_leads }}</div>
+                    <div class="stat-label">New Leads</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="agent-grid">
+            <!-- My Properties -->
+            <div class="panel">
+                <h3>My Recent Properties</h3>
+                {% if my_properties %}
+                <table class="mini-table">
+                    <thead><tr><th>Title</th><th>Price</th><th>Status</th><th>City</th></tr></thead>
+                    <tbody>
+                    {% for p in my_properties %}
+                    <tr>
+                        <td>{{ p.title[:32] }}{% if p.title|length > 32 %}…{% endif %}</td>
+                        <td>{{ format_money(p.price, currency) }}</td>
+                        <td><span class="badge-sm badge-{{ p.status }}">{{ p.status }}</span></td>
+                        <td>{{ p.city or '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="empty-row">No properties assigned yet.</p>
+                {% endif %}
+            </div>
+
+            <!-- Upcoming Appointments -->
+            <div class="panel">
+                <h3>Upcoming Appointments</h3>
+                {% if upcoming %}
+                <table class="mini-table">
+                    <thead><tr><th>Client</th><th>Property</th><th>Date</th></tr></thead>
+                    <tbody>
+                    {% for a in upcoming %}
+                    <tr>
+                        <td>{{ a.client_name or '—' }}</td>
+                        <td>{{ (a.property_title or '—')[:28] }}</td>
+                        <td>{{ a.appointment_date[:16] if a.appointment_date else '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="empty-row">No upcoming appointments.</p>
+                {% endif %}
+            </div>
+
+            <!-- Tasks -->
+            <div class="panel">
+                <h3>My Open Tasks</h3>
+                {% if my_tasks %}
+                <table class="mini-table">
+                    <thead><tr><th>Task</th><th>Priority</th><th>Due</th></tr></thead>
+                    <tbody>
+                    {% for t in my_tasks %}
+                    <tr>
+                        <td>{{ t.title[:36] }}{% if t.title|length > 36 %}…{% endif %}</td>
+                        <td><span class="badge-sm badge-{{ t.priority }}">{{ t.priority }}</span></td>
+                        <td>{{ t.due_date or '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="empty-row">No open tasks. Nice work!</p>
+                {% endif %}
+            </div>
+
+            <!-- Leads -->
+            <div class="panel">
+                <h3>Recent Leads</h3>
+                {% if recent_leads %}
+                <table class="mini-table">
+                    <thead><tr><th>Name</th><th>Interest</th><th>Budget</th><th>Status</th></tr></thead>
+                    <tbody>
+                    {% for l in recent_leads %}
+                    <tr>
+                        <td>{{ l.full_name }}</td>
+                        <td>{{ l.interest or '—' }}</td>
+                        <td>{{ format_money(l.budget, currency) if l.budget else '—' }}</td>
+                        <td><span class="badge-sm badge-{{ l.status }}">{{ l.status }}</span></td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="empty-row">No leads assigned yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

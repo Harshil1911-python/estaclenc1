@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estacle | Admin – Global Search</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head><body>
+<div class="app-layout">
+{% set active = 'search' %}
+{% include 'partials/admin_sidebar.html' %}
+<main class="main-content">
+<header class="top-bar"><div><h1 class="page-title">Global Search</h1><p class="page-subtitle">Search users, properties, clients, deals</p></div></header>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+{% endwith %}
+
+<form method="GET" style="padding:0 32px 16px;display:flex;gap:10px">
+<input name="q" value="{{ q }}" placeholder="Type to search…" style="flex:1;max-width:420px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px">
+<button class="btn-primary" type="submit">Search</button>
+</form>
+{% if q %}
+<div class="panel full"><h3 style="padding:16px 20px 8px;font-size:14px">Users</h3>
+<div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead><tbody>
+{% for u in results.users %}<tr><td>{{ u.full_name }}</td><td>{{ u.email }}</td><td>{{ u.role }}</td></tr>
+{% else %}<tr><td colspan="3" class="empty">None</td></tr>{% endfor %}
+</tbody></table></div></div>
+<div class="panel full"><h3 style="padding:16px 20px 8px;font-size:14px">Properties</h3>
+<div class="table-wrap"><table><thead><tr><th>Title</th><th>City</th><th>Price</th><th>Status</th><th></th></tr></thead><tbody>
+{% for p in results.properties %}<tr><td>{{ p.title }}</td><td>{{ p.city }}</td><td>{{ format_money(p.price, currency) }}</td><td>{{ p.status }}</td>
+<td><a class="btn-sm btn-edit" href="{{ url_for('admin.admin_property_detail', prop_id=p.id) }}">View</a></td></tr>
+{% else %}<tr><td colspan="5" class="empty">None</td></tr>{% endfor %}
+</tbody></table></div></div>
+<div class="panel full"><h3 style="padding:16px 20px 8px;font-size:14px">Clients</h3>
+<div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th></tr></thead><tbody>
+{% for c in results.clients %}<tr><td>{{ c.full_name }}</td><td>{{ c.email }}</td><td>{{ c.status }}</td></tr>
+{% else %}<tr><td colspan="3" class="empty">None</td></tr>{% endfor %}
+</tbody></table></div></div>
+<div class="panel full"><h3 style="padding:16px 20px 8px;font-size:14px">Deals</h3>
+<div class="table-wrap"><table><thead><tr><th>Title</th><th>Stage</th><th>Value</th></tr></thead><tbody>
+{% for d in results.deals %}<tr><td>{{ d.title }}</td><td>{{ d.stage }}</td><td>{{ format_money(d.value, currency) }}</td></tr>
+{% else %}<tr><td colspan="3" class="empty">None</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endif %}
+
+</main></div></body></html>

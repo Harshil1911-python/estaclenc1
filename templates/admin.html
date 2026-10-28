@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estacle | Admin Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .main-content { padding-bottom: 48px; }
+        .dash-wrap { padding: 4px 36px 40px; max-width: 1280px; }
+
+        /* Header like reference */
+        .top-bar.dash-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 36px 12px !important;
+            background: transparent;
+            border-bottom: none;
+            box-shadow: none;
+        }
+        .dash-top .page-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 2px;
+            letter-spacing: -0.02em;
+        }
+        .dash-top .page-subtitle {
+            font-size: 13.5px;
+            color: #64748b;
+            margin: 0;
+        }
+        .top-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .icon-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: 1px solid #e8ecf1;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #475569;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .icon-btn:hover { background: #f8fafc; color: #0f172a; }
+        .icon-btn svg { width: 18px; height: 18px; }
+        .btn-create {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            background: #1e1b4b;
+            color: #fff;
+            border-radius: 999px;
+            font-size: 13.5px;
+            font-weight: 600;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .btn-create:hover { background: #312e81; }
+        .btn-create svg { width: 16px; height: 16px; }
+
+        /* Profile banner – welcome style */
+        .profile-hero {
+            background: #fff;
+            border: 1px solid #e8ecf1;
+            border-radius: 18px;
+            padding: 22px 26px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 22px;
+            box-shadow: 0 1px 3px rgba(15,23,42,0.05);
+            position: relative;
+        }
+        .profile-avatar-wrap {
+            position: relative;
+            flex-shrink: 0;
+        }
+        .profile-avatar {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #312e81, #4f46e5);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 34px;
+            font-weight: 700;
+            object-fit: cover;
+            border: 3px solid #fff;
+            box-shadow: 0 0 0 1px #e2e8f0, 0 4px 14px rgba(15,23,42,0.1);
+        }
+        img.profile-avatar {
+            display: block;
+        }
+        .profile-info { flex: 1; min-width: 0; }
+        .profile-info h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 5px;
+            letter-spacing: -0.02em;
+        }
+        .profile-info .role-line {
+            font-size: 14px;
+            color: #64748b;
+            margin: 0 0 4px;
+            font-weight: 500;
+        }
+        .profile-info .tagline {
+            font-size: 13.5px;
+            color: #94a3b8;
+            margin: 0;
+        }
+        .profile-edit {
+            position: absolute;
+            top: 50%;
+            right: 22px;
+            transform: translateY(-50%);
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: 1px solid #e8ecf1;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            text-decoration: none;
+            transition: all 0.15s;
+        }
+        .profile-edit:hover {
+            background: #eef2ff;
+            border-color: #c7d2fe;
+            color: #4f46e5;
+        }
+        .profile-edit svg { width: 16px; height: 16px; }
+
+        .kpi-three {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 18px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 900px) { .kpi-three { grid-template-columns: 1fr; } }
+        .kpi-card-uniform {
+            background: #fff;
+            border: 1px solid #e8ecf1;
+            border-radius: 14px;
+            padding: 20px 22px;
+            box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+        }
+        .kpi-card-uniform .kpi-label {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+        .kpi-card-uniform .kpi-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.15;
+            letter-spacing: -0.02em;
+        }
+        .kpi-card-uniform .kpi-sub {
+            font-size: 12.5px;
+            color: #94a3b8;
+            margin-top: 6px;
+        }
+
+        .two-panels {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin-bottom: 24px;
+        }
+        @media (max-width: 960px) { .two-panels { grid-template-columns: 1fr; } }
+        .dash-panel {
+            background: #fff;
+            border: 1px solid #e8ecf1;
+            border-radius: 14px;
+            box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 320px;
+        }
+        .dash-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            border-bottom: 1px solid #f1f5f9;
+            flex-shrink: 0;
+        }
+        .dash-panel-header h2 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+            margin: 0;
+        }
+        .dash-panel-header a {
+            font-size: 12.5px;
+            color: #4f46e5;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .dash-panel-body {
+            flex: 1;
+            overflow-y: auto;
+            min-height: 0;
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 transparent;
+        }
+        .dash-panel-body::-webkit-scrollbar { width: 6px; }
+        .dash-panel-body::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 999px;
+        }
+        .empty-panel {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 32px 20px;
+            color: #94a3b8;
+            gap: 12px;
+        }
+        .empty-panel p { font-size: 13.5px; margin: 0; }
+        .btn-create-task {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: #0f172a;
+            color: #fff;
+            border-radius: 10px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .btn-create-task svg { width: 15px; height: 15px; }
+
+        .task-table { width: 100%; border-collapse: collapse; }
+        .task-table th {
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 10px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            background: #fafbfc;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .task-table td {
+            padding: 11px 12px;
+            font-size: 13px;
+            color: #334155;
+            vertical-align: middle;
+            border-bottom: 1px solid #f8fafc;
+        }
+        .task-table tr:nth-child(even) td { background: #f8fafc; }
+        .task-table tr:nth-child(odd) td { background: #fff; }
+        .task-table .col-sl { width: 40px; color: #94a3b8; }
+        .task-table .col-pri { width: 78px; }
+        .task-table .col-days { width: 100px; white-space: nowrap; color: #64748b; font-size: 12px; }
+        .task-table .col-act { width: 44px; text-align: center; }
+        .pri-pill {
+            display: inline-block;
+            padding: 2px 7px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+        .pri-high { background: #fef2f2; color: #dc2626; }
+        .pri-medium { background: #fffbeb; color: #d97706; }
+        .pri-low { background: #f1f5f9; color: #64748b; }
+        .days-overdue { color: #dc2626; font-weight: 600; }
+        .btn-done {
+            width: 28px; height: 28px;
+            border-radius: 7px;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            color: #16a34a;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+        }
+        .btn-done:hover { background: #f0fdf4; border-color: #86efac; }
+        .btn-done svg { width: 14px; height: 14px; }
+
+        .activity-row {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            padding: 12px 18px;
+            font-size: 13px;
+            border-bottom: 1px solid #f8fafc;
+            flex-wrap: wrap;
+        }
+        .activity-row:nth-child(even) { background: #f8fafc; }
+        .activity-row:nth-child(odd) { background: #fff; }
+        .act-name { font-weight: 600; color: #0f172a; }
+        .act-change { color: #475569; }
+        .act-time { color: #94a3b8; font-size: 12px; margin-left: auto; white-space: nowrap; }
+
+        .quick-section { margin-bottom: 24px; }
+        .quick-section h2 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+            margin: 0 0 12px;
+        }
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+        }
+        @media (max-width: 900px) {
+            .actions-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        .action-card {
+            background: #fff;
+            border: 1px solid #e8ecf1;
+            border-radius: 12px;
+            padding: 16px 10px;
+            text-align: center;
+            text-decoration: none;
+            color: #334155;
+            font-size: 12.5px;
+            font-weight: 500;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.15s;
+        }
+        .action-card:hover { border-color: #c7d2fe; color: #4f46e5; background: #f8fafc; }
+        .action-card svg {
+            width: 20px; height: 20px;
+            stroke: currentColor; fill: none; stroke-width: 1.8;
+        }
+
+        .secondary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+        }
+        .sec-stat {
+            background: #fff;
+            border: 1px solid #e8ecf1;
+            border-radius: 12px;
+            padding: 14px 12px;
+            text-align: center;
+        }
+        .sec-stat .val { font-size: 18px; font-weight: 700; color: #0f172a; }
+        .sec-stat .lbl { font-size: 11.5px; color: #94a3b8; margin-top: 4px; font-weight: 500; }
+
+        .create-menu {
+            position: relative;
+            display: inline-block;
+        }
+        .create-dropdown {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: calc(100% + 6px);
+            background: #fff;
+            border: 1px solid #e8ecf1;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(15,23,42,0.12);
+            min-width: 180px;
+            z-index: 50;
+            padding: 6px;
+        }
+        .create-menu.open .create-dropdown { display: block; }
+        .create-dropdown a {
+            display: block;
+            padding: 10px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #334155;
+            font-size: 13.5px;
+            font-weight: 500;
+        }
+        .create-dropdown a:hover { background: #f1f5f9; color: #0f172a; }
+
+        /* Floating toast from bottom */
+        .toast-host {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 28px;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+        }
+        .toast-sphere {
+            pointer-events: auto;
+            background: #0f172a;
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 12px 40px rgba(15,23,42,0.35);
+            opacity: 0;
+            transform: translateY(24px) scale(0.96);
+            transition: opacity 0.28s ease, transform 0.28s ease;
+            max-width: 90vw;
+            text-align: center;
+        }
+        .toast-sphere.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        .toast-sphere.hide {
+            opacity: 0;
+            transform: translateY(16px) scale(0.96);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-layout">
+        {% set active = 'dashboard' %}
+        {% include 'partials/admin_sidebar.html' %}
+
+        <main class="main-content">
+            <header class="top-bar dash-top">
+                <div>
+                    <h1 class="page-title">Dashboard</h1>
+                    <p class="page-subtitle">Welcome back! Here's your business overview.</p>
+                </div>
+                <div class="top-actions">
+                    <a href="{{ url_for('admin.admin_search') }}" class="icon-btn" title="Search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                    </a>
+                    <a href="{{ url_for('admin.admin_activity') }}" class="icon-btn" title="Notifications">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
+                    </a>
+                    <div class="create-menu" id="createMenu">
+                        <button type="button" class="btn-create" onclick="document.getElementById('createMenu').classList.toggle('open')">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            Create New
+                        </button>
+                        <div class="create-dropdown">
+                            <a href="{{ url_for('admin.admin_add_property') }}">Property</a>
+                            <a href="{{ url_for('admin.admin_add_client') }}">Client</a>
+                            <a href="{{ url_for('admin.admin_add_deal') }}">Deal</a>
+                            <a href="{{ url_for('admin.admin_add_task') }}">Task</a>
+                            <a href="{{ url_for('admin.admin_add_user') }}">User</a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <div class="dash-wrap">
+            {# flashes shown as floating toast, not green banners #}
+            <div id="flash-data" style="display:none">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <span data-msg="{{ message|e }}" data-cat="{{ category }}"></span>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            </div>
+
+            <!-- Profile banner -->
+            <div class="profile-hero">
+                <div class="profile-avatar-wrap">
+                    {% if current_user and current_user.avatar %}
+                    <img class="profile-avatar" src="{{ url_for('static', filename='uploads/avatars/' + current_user.avatar) }}" alt="">
+                    {% else %}
+                    <div class="profile-avatar">{{ (current_user.full_name if current_user else session.full_name or 'A')[0]|upper }}</div>
+                    {% endif %}
+                </div>
+                <div class="profile-info">
+                    {% set _name = (current_user.full_name if current_user else session.full_name or 'Admin') %}
+                    {% set _role = (current_user.role if current_user else session.role or 'admin') %}
+                    <h2>Welcome back, {{ _name.split()[0] }}</h2>
+                    <p class="role-line">{% if _role == 'admin' %}Administrator{% else %}{{ _role|capitalize }}{% endif %} at Estacle</p>
+                    <p class="tagline">Your real estate workspace, all in one place.</p>
+                </div>
+                <a href="{{ url_for('admin.admin_edit_user', user_id=session.user_id, next='dashboard') }}" class="profile-edit" title="Edit profile & photo">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                    </svg>
+                </a>
+            </div>
+
+            <div class="kpi-three">
+                <div class="kpi-card-uniform">
+                    <div class="kpi-label">Total Property Value</div>
+                    <div class="kpi-value">{{ format_money(stats.total_property_value, 'INR') }}</div>
+                    <div class="kpi-sub">{{ stats.total_properties }} properties</div>
+                </div>
+                <div class="kpi-card-uniform">
+                    <div class="kpi-label">Total Deal Value</div>
+                    <div class="kpi-value">{{ format_money(stats.total_deal_value, 'INR') }}</div>
+                    <div class="kpi-sub">{{ stats.closed_deals }} closed deals</div>
+                </div>
+                <div class="kpi-card-uniform">
+                    <div class="kpi-label">Deals Closed This Month</div>
+                    <div class="kpi-value">{{ stats.deals_closed_this_month }}</div>
+                    <div class="kpi-sub">{{ format_money(stats.commission_earned, 'INR') }} commission earned</div>
+                </div>
+            </div>
+
+            <div class="two-panels">
+                <div class="dash-panel">
+                    <div class="dash-panel-header">
+                        <h2>Today's Tasks</h2>
+                        <a href="{{ url_for('admin.admin_tasks') }}">View all</a>
+                    </div>
+                    {% if pending_tasks %}
+                    <div class="dash-panel-body">
+                        <table class="task-table">
+                            <thead>
+                                <tr>
+                                    <th class="col-sl">#</th>
+                                    <th class="col-pri">Priority</th>
+                                    <th>Task</th>
+                                    <th class="col-days">Remaining</th>
+                                    <th class="col-act"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for t in pending_tasks %}
+                                <tr>
+                                    <td class="col-sl">{{ t.sl }}</td>
+                                    <td class="col-pri"><span class="pri-pill pri-{{ t.priority }}">{{ t.priority }}</span></td>
+                                    <td>{{ t.title }}</td>
+                                    <td class="col-days {% if t.days_left is not none and t.days_left < 0 %}days-overdue{% endif %}">{{ t.days_label }}</td>
+                                    <td class="col-act">
+                                        <form method="post" action="{{ url_for('admin.admin_task_status', task_id=t.id) }}">
+                                            <input type="hidden" name="status" value="done">
+                                            <input type="hidden" name="next" value="dashboard">
+                                            <button type="submit" class="btn-done" title="Mark complete">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-panel">
+                        <p>No tasks for today</p>
+                        <a href="{{ url_for('admin.admin_add_task') }}" class="btn-create-task">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Create task
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="dash-panel">
+                    <div class="dash-panel-header">
+                        <h2>Today's Activity</h2>
+                        <a href="{{ url_for('admin.admin_activity') }}">View all</a>
+                    </div>
+                    <div class="dash-panel-body">
+                        {% if activity_feed %}
+                            {% for a in activity_feed %}
+                            <div class="activity-row">
+                                <span class="act-name">{{ a.user_name }}</span>
+                                <span class="act-change">{{ a.change }}</span>
+                                <span class="act-time">{{ a.time_ago }}</span>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-panel"><p>No activity yet</p></div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="quick-section">
+                <h2>Quick Actions</h2>
+                <div class="actions-grid">
+                    <a href="{{ url_for('admin.admin_add_user') }}" class="action-card">
+                        <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                        Add User
+                    </a>
+                    <a href="{{ url_for('admin.admin_add_property') }}" class="action-card">
+                        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><line x1="12" y1="15" x2="12" y2="9"/><line x1="9" y1="12" x2="15" y2="12"/></svg>
+                        Add Property
+                    </a>
+                    <a href="{{ url_for('admin.admin_add_client') }}" class="action-card">
+                        <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                        Add Client
+                    </a>
+                    <a href="{{ url_for('admin.admin_add_deal') }}" class="action-card">
+                        <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        Add Deal
+                    </a>
+                    <a href="{{ url_for('admin.admin_add_task') }}" class="action-card">
+                        <svg viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        Add Task
+                    </a>
+                    <a href="{{ url_for('admin.admin_deals') }}" class="action-card">
+                        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                        Deals
+                    </a>
+                    <a href="{{ url_for('admin.admin_appointments') }}" class="action-card">
+                        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        Appointments
+                    </a>
+                    <a href="{{ url_for('admin.admin_commission') }}" class="action-card">
+                        <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                        Commission
+                    </a>
+                </div>
+            </div>
+
+            <div class="secondary-stats">
+                <div class="sec-stat"><div class="val">{{ stats.total_users }}</div><div class="lbl">Total Users</div></div>
+                <div class="sec-stat"><div class="val">{{ stats.total_agents }}</div><div class="lbl">Agents</div></div>
+                <div class="sec-stat"><div class="val">{{ stats.total_properties }}</div><div class="lbl">Properties</div></div>
+                <div class="sec-stat"><div class="val">{{ stats.total_clients }}</div><div class="lbl">Clients / Leads</div></div>
+                <div class="sec-stat"><div class="val">{{ stats.total_appointments }}</div><div class="lbl">Appointments</div></div>
+                <div class="sec-stat"><div class="val">{{ stats.lead_conversion_rate }}%</div><div class="lbl">Lead Conversion</div></div>
+                <div class="sec-stat"><div class="val">{% if stats.mom_growth >= 0 %}+{% endif %}{{ stats.mom_growth }}%</div><div class="lbl">MoM Growth</div></div>
+            </div>
+            </div>
+        </main>
+    </div>
+    <div class="toast-host" id="toastHost" aria-live="polite"></div>
+    <script>
+        document.addEventListener('click', function(e) {
+            var m = document.getElementById('createMenu');
+            if (m && !m.contains(e.target)) m.classList.remove('open');
+        });
+
+        (function() {
+            var host = document.getElementById('toastHost');
+            var data = document.getElementById('flash-data');
+            if (!host || !data) return;
+            var items = data.querySelectorAll('span[data-msg]');
+            if (!items.length) return;
+
+            function showToast(text) {
+                var el = document.createElement('div');
+                el.className = 'toast-sphere';
+                el.textContent = text || 'Updated Successfully';
+                host.innerHTML = '';
+                host.appendChild(el);
+                requestAnimationFrame(function() {
+                    el.classList.add('show');
+                });
+                setTimeout(function() {
+                    el.classList.add('hide');
+                    el.classList.remove('show');
+                    setTimeout(function() { el.remove(); }, 300);
+                }, 2800);
+            }
+
+            // Prefer clean success copy
+            var msg = items[0].getAttribute('data-msg') || '';
+            var cat = items[0].getAttribute('data-cat') || '';
+            if (cat === 'success' || /updated|created|saved|deleted|success/i.test(msg)) {
+                showToast('Updated Successfully');
+            } else {
+                showToast(msg);
+            }
+        })();
+    </script>
+</body>
+</html>

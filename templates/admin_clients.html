@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estacle | Admin – Clients</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+    {% set active = 'clients' %}
+    {% include 'partials/admin_sidebar.html' %}
+    <main class="main-content">
+        <header class="top-bar">
+            <div>
+                <h1 class="page-title">Clients / Leads</h1>
+                <p class="page-subtitle">All clients and leads in the system</p>
+            </div>
+            <a href="{{ url_for('admin.admin_export_clients') }}" class="btn-secondary">Export CSV</a>
+                <a href="{{ url_for('admin.admin_add_client') }}" class="btn-primary">Add Client</a>
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+        {% endwith %}
+        <div class="panel full">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Status</th><th>Agent</th><th>Created</th><th>Action</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for c in clients %}
+                        <tr>
+                            <td>{{ c.id }}</td>
+                            <td>{{ c.full_name }}</td>
+                            <td>{{ c.email or '—' }}</td>
+                            <td>{{ c.phone or '—' }}</td>
+                            <td><span class="badge badge-{{ c.status }}">{{ c.status }}</span></td>
+                            <td>{{ c.agent_name or '—' }}</td>
+                            <td>{{ c.created_at[:10] if c.created_at else '—' }}</td>
+                            <td class="actions-cell">
+                                <form method="POST" action="{{ url_for('admin.admin_update_client_status', client_id=c.id) }}" style="display:inline;">
+                                    <select name="status" class="status-select" onchange="this.form.submit()">
+                                        <option value="lead" {% if c.status == 'lead' %}selected{% endif %}>Lead</option>
+                                        <option value="contacted" {% if c.status == 'contacted' %}selected{% endif %}>Contacted</option>
+                                        <option value="qualified" {% if c.status == 'qualified' %}selected{% endif %}>Qualified</option>
+                                        <option value="negotiation" {% if c.status == 'negotiation' %}selected{% endif %}>Negotiation</option>
+                                        <option value="closed" {% if c.status == 'closed' %}selected{% endif %}>Closed</option>
+                                        <option value="lost" {% if c.status == 'lost' %}selected{% endif %}>Lost</option>
+                                    </select>
+                                </form>
+                                <form method="POST" action="{{ url_for('admin.admin_delete_client', client_id=c.id) }}" style="display:inline;" onsubmit="return confirm('Delete this client?');">
+                                    <button type="submit" class="btn-sm btn-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="8" class="empty">No clients yet</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

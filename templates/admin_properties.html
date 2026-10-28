@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estacle | Admin – Properties</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .bulk-bar { display:none; align-items:center; gap:10px; padding:10px 16px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; margin-bottom:14px; }
+        .bulk-bar.visible { display:flex; }
+        .bulk-bar select, .bulk-bar button { font-size:13px; }
+        .check-col { width:36px; text-align:center; }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+    {% set active = 'properties' %}
+    {% include 'partials/admin_sidebar.html' %}
+    <main class="main-content">
+        <header class="top-bar">
+            <div>
+                <h1 class="page-title">Properties</h1>
+                <p class="page-subtitle">All property listings across the platform</p>
+            </div>
+            <div style="display:flex;gap:8px">
+                <a href="{{ url_for('admin.admin_export_properties') }}" class="btn-secondary">Export CSV</a>
+                <a href="{{ url_for('admin.admin_display_properties') }}" class="btn-secondary">Display</a>
+                <a href="{{ url_for('admin.admin_add_property') }}" class="btn-primary">Add Property</a>
+            </div>
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+        {% endwith %}
+        <div class="panel full">
+            <form method="POST" action="{{ url_for('admin.admin_bulk_properties') }}" id="bulkForm">
+                <div class="bulk-bar" id="bulkBar">
+                    <span id="selectedCount" style="font-size:13px;font-weight:600;color:#1d4ed8;">0 selected</span>
+                    <select name="action" required>
+                        <option value="">Bulk action…</option>
+                        <option value="available">Set Available</option>
+                        <option value="under_offer">Set Under Offer</option>
+                        <option value="sold">Set Sold</option>
+                        <option value="rented">Set Rented</option>
+                        <option value="delete">Delete</option>
+                    </select>
+                    <button type="submit" class="btn-primary" style="padding:6px 14px;" onclick="return confirm('Apply this action to selected properties?')">Apply</button>
+                    <button type="button" class="btn-secondary" style="padding:6px 14px;" onclick="clearSelection()">Clear</button>
+                </div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="check-col"><input type="checkbox" id="selectAll" onclick="toggleAll(this)"></th>
+                                <th>ID</th><th>Title</th><th>Type</th><th>Price</th><th>Status</th><th>City</th><th>Agent</th><th>Created</th><th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in properties %}
+                            <tr>
+                                <td class="check-col"><input type="checkbox" name="ids" value="{{ p.id }}" class="row-check" onchange="updateBulk()"></td>
+                                <td>{{ p.id }}</td>
+                                <td>{{ p.title }}</td>
+                                <td>{{ p.property_type }}</td>
+                                <td>{{ format_money(p.price, currency) if format_money is defined else p.price }}</td>
+                                <td><span class="badge badge-{{ p.status }}">{{ p.status }}</span></td>
+                                <td>{{ p.city or '—' }}</td>
+                                <td>{{ p.agent_name or '—' }}</td>
+                                <td>{{ p.created_at[:10] if p.created_at else '—' }}</td>
+                                <td class="actions-cell">
+                                    <a href="{{ url_for('admin.admin_property_detail', prop_id=p.id) }}" class="btn-sm btn-edit">View</a>
+                                    <form method="POST" action="{{ url_for('admin.admin_update_property_status', prop_id=p.id) }}" style="display:inline;">
+                                        <select name="status" class="status-select" onchange="this.form.submit()">
+                                            <option value="available" {% if p.status == 'available' %}selected{% endif %}>Available</option>
+                                            <option value="under_offer" {% if p.status == 'under_offer' %}selected{% endif %}>Under Offer</option>
+                                            <option value="sold" {% if p.status == 'sold' %}selected{% endif %}>Sold</option>
+                                            <option value="rented" {% if p.status == 'rented' %}selected{% endif %}>Rented</option>
+                                        </select>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('admin.admin_delete_property', prop_id=p.id) }}" style="display:inline;" onsubmit="return confirm('Delete this property?');">
+                                        <button type="submit" class="btn-sm btn-danger">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="10" class="empty">No properties yet</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+<script>
+function updateBulk() {
+    const checks = document.querySelectorAll('.row-check:checked');
+    const bar = document.getElementById('bulkBar');
+    document.getElementById('selectedCount').textContent = checks.length + ' selected';
+    bar.classList.toggle('visible', checks.length > 0);
+    document.getElementById('selectAll').checked = checks.length && checks.length === document.querySelectorAll('.row-check').length;
+}
+function toggleAll(el) {
+    document.querySelectorAll('.row-check').forEach(c => c.checked = el.checked);
+    updateBulk();
+}
+function clearSelection() {
+    document.querySelectorAll('.row-check').forEach(c => c.checked = false);
+    document.getElementById('selectAll').checked = false;
+    updateBulk();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estacle | Admin – Add Property</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+    {% set active = 'add_property' %}
+    {% include 'partials/admin_sidebar.html' %}
+    <main class="main-content">
+        <header class="top-bar">
+            <div>
+                <h1 class="page-title">Add Property</h1>
+                <p class="page-subtitle">Full listing with photos and details · Prices in {{ currency }}</p>
+            </div>
+            <a href="{{ url_for('admin.admin_properties') }}" class="btn-secondary">Back</a>
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+        {% endwith %}
+
+        <div class="form-page-hero">
+            <h2>New listing</h2>
+            <p>Complete property details, pricing, owner info, amenities, and upload photos. Currency is set in Settings ({{ currency }}).</p>
+        </div>
+
+        <div class="panel form-panel" style="max-width:900px">
+            <form method="POST" enctype="multipart/form-data" class="admin-form">
+                <div class="form-section-title">Basic</div>
+                <div class="form-row">
+                    <div class="form-group"><label>Title *</label><input name="title" required placeholder="e.g. Sea-view 3BHK Apartment"></div>
+                    <div class="form-group"><label>Listing type</label>
+                        <select name="listing_type"><option value="sale">For Sale</option><option value="rent">For Rent</option></select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Property type</label>
+                        <select name="property_type">
+                            <option value="apartment">Apartment</option><option value="house">House</option>
+                            <option value="villa">Villa</option><option value="condo">Condo</option>
+                            <option value="townhouse">Townhouse</option><option value="land">Land</option>
+                            <option value="commercial">Commercial</option>
+                        </select>
+                    </div>
+                    <div class="form-group"><label>Category</label>
+                        <select name="category"><option value="residential">Residential</option><option value="commercial">Commercial</option><option value="industrial">Industrial</option></select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Status</label>
+                        <select name="status"><option value="available">Available</option><option value="under_offer">Under Offer</option><option value="sold">Sold</option><option value="rented">Rented</option></select>
+                    </div>
+                    <div class="form-group"><label>Furnishing</label>
+                        <select name="furnishing"><option value="">—</option><option value="unfurnished">Unfurnished</option><option value="semi">Semi-furnished</option><option value="furnished">Fully furnished</option></select>
+                    </div>
+                </div>
+                <div class="form-group"><label>Description</label><textarea name="description" placeholder="Highlights, neighborhood, amenities..."></textarea></div>
+
+                <div class="form-section-title">Pricing ({{ currency }})</div>
+                <div class="form-row">
+                    <div class="form-group"><label>Sale / list price *</label><input type="number" name="price" step="0.01" required placeholder="0"></div>
+                    <div class="form-group"><label>Price per sqft</label><input type="number" name="per_sqft" step="0.01"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Monthly rent</label><input type="number" name="monthly_rent" step="0.01"></div>
+                    <div class="form-group"><label>Security deposit</label><input type="number" name="security_deposit" step="0.01"></div>
+                </div>
+                <div class="form-group"><label>Maintenance (monthly)</label><input type="number" name="maintenance" step="0.01"></div>
+
+                <div class="form-section-title">Size & specs</div>
+                <div class="form-row">
+                    <div class="form-group"><label>Bedrooms</label><input type="number" name="bedrooms" min="0"></div>
+                    <div class="form-group"><label>Bathrooms</label><input type="number" name="bathrooms" step="0.5" min="0"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Built-up area (sqft)</label><input type="number" name="area_sqft" step="0.01"></div>
+                    <div class="form-group"><label>Carpet area (sqft)</label><input type="number" name="carpet_area" step="0.01"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Floor</label><input name="floor" placeholder="e.g. 12 / G+2"></div>
+                    <div class="form-group"><label>Year built</label><input name="year_built" placeholder="2018"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Facing</label><input name="facing" placeholder="East / North-facing"></div>
+                    <div class="form-group"><label>Parking</label><input name="parking" placeholder="2 covered"></div>
+                </div>
+                <div class="form-group"><label>Amenities</label><input name="amenities" placeholder="Pool, Gym, Security, Power backup (comma-separated)"></div>
+
+                <div class="form-section-title">Location</div>
+                <div class="form-group"><label>Address</label><input name="address" placeholder="Street / building"></div>
+                <div class="form-row">
+                    <div class="form-group"><label>City</label><input name="city"></div>
+                    <div class="form-group"><label>State / Emirate</label><input name="state"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>PIN / ZIP</label><input name="zip_code"></div>
+                    <div class="form-group"><label>Agent</label>
+                        <select name="agent_id"><option value="">— Unassigned —</option>{% for a in agents %}<option value="{{ a.id }}">{{ a.full_name }}</option>{% endfor %}</select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Latitude</label><input name="latitude" placeholder="Optional"></div>
+                    <div class="form-group"><label>Longitude</label><input name="longitude" placeholder="Optional"></div>
+                </div>
+
+                <div class="form-section-title">Owner / seller</div>
+                <div class="form-row">
+                    <div class="form-group"><label>Seller / owner name</label><input name="seller_name"></div>
+                    <div class="form-group"><label>Seller phone</label><input name="seller_phone"></div>
+                </div>
+
+                <div class="form-section-title">Photos</div>
+                <div class="form-group">
+                    <label>Upload images</label>
+                    <input type="file" name="photos" accept="image/*" multiple>
+                    <span class="form-hint">You can select multiple images (JPG, PNG, WebP)</span>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Publish Property</button>
+                    <a href="{{ url_for('admin.admin_properties') }}" class="btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estacle | Favorites</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+.browse-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;padding:0 32px 32px}
+.pcard{background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;text-decoration:none;color:inherit}
+.pcard img{width:100%;height:150px;object-fit:cover}
+.pcard .body{padding:12px 14px}.pcard .title{font-weight:600;font-size:14px}.pcard .price{font-weight:700;color:#2563eb;margin-top:6px}
+</style>
+</head><body>
+<div class="app-layout">
+{% set active = 'favorites' %}
+{% include 'partials/client_sidebar.html' %}
+<main class="main-content">
+<header class="top-bar"><div><h1 class="page-title">Favorites</h1><p class="page-subtitle">Properties you saved</p></div>
+<a href="{{ url_for('client.client_browse') }}" class="btn-primary">Browse more</a></header>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+{% endwith %}
+<div class="browse-grid">
+{% for p in properties %}
+{% set photos = (p.photos or '').split(',') if p.photos else [] %}
+{% set cover = photos[0].strip() if photos and photos[0].strip() else None %}
+<a href="{{ url_for('client.client_property', prop_id=p.id) }}" class="pcard">
+{% if cover %}<img src="{{ url_for('static', filename='uploads/properties/' + cover) }}" alt="">{% else %}<div style="height:150px;background:#eff6ff"></div>{% endif %}
+<div class="body"><div class="title">{{ p.title }}</div><div class="price">{{ format_money(p.price, currency) }}</div></div>
+</a>
+{% else %}<p style="color:#94a3b8">No favorites yet. Save properties while browsing.</p>{% endfor %}
+</div>
+</main></div></body></html>

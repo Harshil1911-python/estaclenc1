@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estacle | Inquiries</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+    {% set active = 'inquiries' %}
+    {% include 'partials/admin_sidebar.html' %}
+    <main class="main-content">
+        <header class="top-bar">
+            <div>
+                <h1 class="page-title">Property Inquiries</h1>
+                <p class="page-subtitle">Messages from clients about listings</p>
+            </div>
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+        {% endwith %}
+        <div class="panel full">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Property</th>
+                            <th>From</th>
+                            <th>Email / Phone</th>
+                            <th>Message</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for i in inquiries %}
+                        <tr>
+                            <td>{{ i.id }}</td>
+                            <td>{{ i.property_title or '—' }}</td>
+                            <td>{{ i.full_name }}</td>
+                            <td>
+                                <div>{{ i.email }}</div>
+                                <div style="font-size:12px;color:#64748b">{{ i.phone or '' }}</div>
+                            </td>
+                            <td style="max-width:280px;white-space:pre-wrap;font-size:13px">{{ i.message }}</td>
+                            <td><span class="badge badge-{{ i.status }}">{{ i.status }}</span></td>
+                            <td>{{ i.created_at[:16] if i.created_at else '—' }}</td>
+                            <td class="actions-cell">
+                                <form method="POST" action="{{ url_for('admin.admin_inquiry_status', inq_id=i.id) }}" style="display:inline">
+                                    <select name="status" class="status-select" onchange="this.form.submit()">
+                                        <option value="new" {% if i.status=='new' %}selected{% endif %}>New</option>
+                                        <option value="contacted" {% if i.status=='contacted' %}selected{% endif %}>Contacted</option>
+                                        <option value="closed" {% if i.status=='closed' %}selected{% endif %}>Closed</option>
+                                    </select>
+                                </form>
+                                <form method="POST" action="{{ url_for('admin.admin_delete_inquiry', inq_id=i.id) }}" style="display:inline" onsubmit="return confirm('Delete this inquiry?')">
+                                    <button type="submit" class="btn-sm btn-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="8" class="empty">No inquiries yet</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

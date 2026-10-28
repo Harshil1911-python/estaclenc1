@@ -1,0 +1,39 @@
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <div class="logo">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Estacle" class="sidebar-logo">
+        </div>
+    </div>
+    <nav class="sidebar-nav">
+        <a href="{{ url_for('client.client_dashboard') }}" class="nav-item {% if active == 'dashboard' %}active{% endif %}">
+            <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+            Dashboard
+        </a>
+        <a href="{{ url_for('client.client_browse') }}" class="nav-item {% if active == 'browse' %}active{% endif %}">
+            <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Browse Properties
+        </a>
+        <a href="{{ url_for('client.client_favorites') }}" class="nav-item {% if active == 'favorites' %}active{% endif %}">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            Favorites
+        </a>
+        <a href="{{ url_for('client.client_appointments') }}" class="nav-item {% if active == 'appointments' %}active{% endif %}">
+            <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            My Appointments
+        </a>
+        <a href="{{ url_for('client.client_profile') }}" class="nav-item {% if active == 'profile' %}active{% endif %}">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            My Profile
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <div class="user-info">
+            <div class="user-avatar">{{ session.full_name[0] }}</div>
+            <div class="user-details">
+                <div class="user-name">{{ session.full_name }}</div>
+                <div class="user-role">Customer</div>
+            </div>
+        </div>
+        <a href="{{ url_for('auth.logout') }}" class="logout-btn">Sign out</a>
+    </div>
+</aside>

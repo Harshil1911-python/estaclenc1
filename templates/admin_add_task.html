@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estacle | Admin – Add Task</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+{% set active = 'add_task' %}
+{% include 'partials/admin_sidebar.html' %}
+<main class="main-content">
+<header class="top-bar">
+<div><h1 class="page-title">Add Task</h1><p class="page-subtitle">Create a follow-up or to-do</p></div>
+
+</header>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+{% endwith %}
+
+<div class="form-page-hero"><h2>New task</h2><p>Assign work to an agent and link it to a client or property.</p></div>
+<div class="panel form-panel"><form method="POST" class="admin-form">
+<div class="form-section-title">Details</div>
+<div class="form-group"><label>Title *</label><input name="title" required placeholder="e.g. Call client about viewing"></div>
+<div class="form-group"><label>Description</label><textarea name="description"></textarea></div>
+<div class="form-row">
+<div class="form-group"><label>Due date</label><input type="date" name="due_date"></div>
+<div class="form-group"><label>Priority</label><select name="priority"><option value="low">Low</option><option value="medium" selected>Medium</option><option value="high">High</option></select></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>Status</label><select name="status"><option value="pending">Pending</option><option value="in_progress">In progress</option></select></div>
+<div class="form-group"><label>Assign to</label><select name="assigned_to"><option value="">—</option>{% for a in agents %}<option value="{{ a.id }}">{{ a.full_name }}</option>{% endfor %}</select></div>
+</div>
+<div class="form-section-title">Links</div>
+<div class="form-row">
+<div class="form-group"><label>Client</label><select name="related_client_id"><option value="">—</option>{% for c in clients %}<option value="{{ c.id }}">{{ c.full_name }}</option>{% endfor %}</select></div>
+<div class="form-group"><label>Property</label><select name="related_property_id"><option value="">—</option>{% for p in properties %}<option value="{{ p.id }}">{{ p.title }}</option>{% endfor %}</select></div>
+</div>
+<div class="form-actions"><button class="btn-primary" type="submit">Create Task</button><a href="{{ url_for('admin.admin_tasks') }}" class="btn-secondary">Cancel</a></div>
+</form></div>
+
+</main>
+</div>
+</body>
+</html>

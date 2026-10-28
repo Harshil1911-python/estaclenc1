@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estacle | Admin – Deals Pipeline</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+{% set active = 'deals' %}
+{% include 'partials/admin_sidebar.html' %}
+<main class="main-content">
+<header class="top-bar">
+<div><h1 class="page-title">Deals Pipeline</h1><p class="page-subtitle">Offers through closed deals</p></div>
+<a href="{{ url_for('admin.admin_export_deals') }}" class="btn-secondary">Export CSV</a>
+                <a href="{{ url_for('admin.admin_add_deal') }}" class="btn-primary">Add Deal</a>
+</header>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+{% endwith %}
+
+<div class="panel full"><div class="table-wrap"><table>
+<thead><tr><th>Title</th><th>Property</th><th>Client</th><th>Agent</th><th>Value</th><th>Commission</th><th>Stage</th><th>Close</th><th>Action</th></tr></thead>
+<tbody>
+{% for d in deals %}
+<tr>
+<td>{{ d.title }}</td>
+<td>{{ d.property_title or '—' }}</td>
+<td>{{ d.client_name or '—' }}</td>
+<td>{{ d.agent_name or '—' }}</td>
+<td>${{ "%.0f"|format(d.value or 0) }}</td>
+<td>{{ d.commission_rate }}% → ${{ "%.0f"|format((d.value or 0) * (d.commission_rate or 0) / 100) }}</td>
+<td>
+<form method="POST" action="{{ url_for('admin.admin_deal_stage', deal_id=d.id) }}" style="display:inline">
+<select name="stage" class="status-select" onchange="this.form.submit()">
+<option value="offer" {% if d.stage=='offer' %}selected{% endif %}>Offer</option>
+<option value="negotiation" {% if d.stage=='negotiation' %}selected{% endif %}>Negotiation</option>
+<option value="under_contract" {% if d.stage=='under_contract' %}selected{% endif %}>Under contract</option>
+<option value="closed" {% if d.stage=='closed' %}selected{% endif %}>Closed</option>
+<option value="lost" {% if d.stage=='lost' %}selected{% endif %}>Lost</option>
+</select></form>
+</td>
+<td>{{ d.expected_close or '—' }}</td>
+<td><form method="POST" action="{{ url_for('admin.admin_delete_deal', deal_id=d.id) }}" style="display:inline" onsubmit="return confirm('Delete?')"><button class="btn-sm btn-danger" type="submit">Delete</button></form></td>
+</tr>
+{% else %}<tr><td colspan="9" class="empty">No deals yet</td></tr>{% endfor %}
+</tbody></table></div></div>
+
+</main>
+</div>
+</body>
+</html>

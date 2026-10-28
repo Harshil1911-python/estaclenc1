@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estacle | Admin – Add Document</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+{% set active = 'add_document' %}
+{% include 'partials/admin_sidebar.html' %}
+<main class="main-content">
+<header class="top-bar">
+<div><h1 class="page-title">Add Document</h1><p class="page-subtitle">Record a document and optional expiry</p></div>
+
+</header>
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+{% endwith %}
+
+<div class="form-page-hero"><h2>Document record</h2><p>Track listing agreements, IDs, and other papers with expiry dates.</p></div>
+<div class="panel form-panel"><form method="POST" class="admin-form">
+<div class="form-group"><label>Title *</label><input name="title" required placeholder="e.g. Listing agreement – 123 Main"></div>
+<div class="form-row">
+<div class="form-group"><label>Doc type</label><select name="doc_type"><option value="listing_agreement">Listing agreement</option><option value="id">ID / KYC</option><option value="contract">Contract</option><option value="other">Other</option></select></div>
+<div class="form-group"><label>Expiry date</label><input type="date" name="expiry_date"></div>
+</div>
+<div class="form-row">
+<div class="form-group"><label>Related type</label><select name="related_type"><option value="">—</option><option value="property">Property</option><option value="client">Client</option><option value="deal">Deal</option></select></div>
+<div class="form-group"><label>Related ID</label><input type="number" name="related_id" placeholder="Optional ID"></div>
+</div>
+<div class="form-group"><label>Notes</label><textarea name="notes"></textarea></div>
+<div class="form-actions"><button class="btn-primary" type="submit">Save Document</button><a href="{{ url_for('admin.admin_documents') }}" class="btn-secondary">Cancel</a></div>
+</form></div>
+
+</main>
+</div>
+</body>
+</html>

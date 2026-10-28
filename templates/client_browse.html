@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estacle | Browse Properties</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .browse-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:18px; padding:0 32px 32px; }
+        .pcard { background:#fff; border:1px solid #e2e8f0; border-radius:12px; overflow:hidden; text-decoration:none; color:inherit; transition:transform .2s,box-shadow .2s; }
+        .pcard:hover { transform:translateY(-3px); box-shadow:0 10px 24px rgba(37,99,235,.1); }
+        .pcard img { width:100%; height:160px; object-fit:cover; display:block; }
+        .pcard .body { padding:12px 14px 14px; }
+        .pcard .title { font-weight:600; font-size:14px; }
+        .pcard .meta { font-size:12px; color:#64748b; margin:4px 0 8px; }
+        .pcard .price { font-weight:700; color:#2563eb; }
+        .filters-bar { display:flex; flex-wrap:wrap; gap:10px; padding:0 32px 12px; align-items:end; }
+        .filters-bar .fg { display:flex; flex-direction:column; gap:4px; }
+        .filters-bar label { font-size:11px; font-weight:600; color:#64748b; }
+        .filters-bar input, .filters-bar select { padding:8px 10px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:13px; font-family:inherit; background:#fff; min-width:100px; }
+        .saved-bar { padding:0 32px 18px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+        .saved-chip { display:inline-flex; align-items:center; gap:6px; background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; border-radius:999px; padding:4px 10px 4px 12px; font-size:12px; font-weight:500; text-decoration:none; }
+        .saved-chip button { background:none; border:none; cursor:pointer; color:#64748b; font-size:14px; line-height:1; padding:0; }
+        .save-form { display:flex; gap:6px; align-items:center; margin-left:auto; }
+        .save-form input { padding:6px 10px; border:1.5px solid #e2e8f0; border-radius:8px; font-size:12px; width:140px; }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+    {% set active = 'browse' %}
+    {% include 'partials/client_sidebar.html' %}
+    <main class="main-content">
+        <header class="top-bar">
+            <div>
+                <h1 class="page-title">Browse Properties</h1>
+                <p class="page-subtitle">{{ properties|length }} available · prices in {{ currency }}</p>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+        {% endwith %}
+
+        <form method="GET" class="filters-bar" id="filterForm">
+            <div class="fg"><label>Search</label><input name="q" value="{{ filters.q }}" placeholder="Title, city…"></div>
+            <div class="fg"><label>Listing</label>
+                <select name="listing_type">
+                    <option value="">All</option>
+                    <option value="sale" {% if filters.listing_type=='sale' %}selected{% endif %}>Sale</option>
+                    <option value="rent" {% if filters.listing_type=='rent' %}selected{% endif %}>Rent</option>
+                </select>
+            </div>
+            <div class="fg"><label>Type</label>
+                <select name="property_type">
+                    <option value="">All</option>
+                    {% for t in ['apartment','house','villa','condo','townhouse','land','commercial'] %}
+                    <option value="{{ t }}" {% if filters.property_type==t %}selected{% endif %}>{{ t|capitalize }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="fg"><label>City</label><input name="city" value="{{ filters.city }}" placeholder="City"></div>
+            <div class="fg"><label>Min Price</label><input name="min_price" type="number" value="{{ filters.min_price }}" placeholder="0"></div>
+            <div class="fg"><label>Max Price</label><input name="max_price" type="number" value="{{ filters.max_price }}" placeholder="Any"></div>
+            <div class="fg"><label>Bedrooms ≥</label>
+                <select name="bedrooms">
+                    <option value="">Any</option>
+                    {% for n in [1,2,3,4,5] %}
+                    <option value="{{ n }}" {% if filters.bedrooms==n|string %}selected{% endif %}>{{ n }}+</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn-primary">Filter</button>
+            <a href="{{ url_for('client.client_browse') }}" class="btn-secondary">Clear</a>
+        </form>
+
+        <div class="saved-bar">
+            {% if saved_searches %}
+                <span style="font-size:12px;color:#64748b;font-weight:600;">Saved:</span>
+                {% for s in saved_searches %}
+                <a href="{{ url_for('client.client_apply_saved_search', sid=s.id) }}" class="saved-chip">
+                    {{ s.name }}
+                    <form method="POST" action="{{ url_for('client.client_delete_saved_search', sid=s.id) }}" style="display:inline" onsubmit="return confirm('Remove this saved search?')">
+                        <button type="submit" title="Delete">×</button>
+                    </form>
+                </a>
+                {% endfor %}
+            {% endif %}
+            <form method="POST" action="{{ url_for('client.client_save_search') }}" class="save-form">
+                <input type="hidden" name="q" value="{{ filters.q }}">
+                <input type="hidden" name="listing_type" value="{{ filters.listing_type }}">
+                <input type="hidden" name="property_type" value="{{ filters.property_type }}">
+                <input type="hidden" name="city" value="{{ filters.city }}">
+                <input type="hidden" name="min_price" value="{{ filters.min_price }}">
+                <input type="hidden" name="max_price" value="{{ filters.max_price }}">
+                <input type="hidden" name="bedrooms" value="{{ filters.bedrooms }}">
+                <input name="name" placeholder="Name this search…" required>
+                <button type="submit" class="btn-secondary" style="padding:6px 12px;font-size:12px;">Save Search</button>
+            </form>
+        </div>
+
+        <div class="browse-grid">
+            {% for p in properties %}
+            {% set photos = (p.photos or '').split(',') if p.photos else [] %}
+            {% set cover = photos[0].strip() if photos and photos[0].strip() else None %}
+            <a href="{{ url_for('client.client_property', prop_id=p.id) }}" class="pcard">
+                {% if cover %}<img src="{{ url_for('static', filename='uploads/properties/' + cover) }}" alt="">{% else %}<div style="height:160px;background:#eff6ff"></div>{% endif %}
+                <div class="body">
+                    <div class="title">{{ p.title }}</div>
+                    <div class="meta">{{ p.city or '—' }} · {{ p.property_type }} · {{ p.listing_type or 'sale' }}{% if p.bedrooms %} · {{ p.bedrooms }} bed{% endif %}</div>
+                    <div class="price">{{ format_money(p.price, currency) }}</div>
+                </div>
+            </a>
+            {% else %}
+            <p style="color:#94a3b8;padding:20px 0">No properties match your filters.</p>
+            {% endfor %}
+        </div>
+    </main>
+</div>
+</body>
+</html>

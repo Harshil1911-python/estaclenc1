@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estacle | Admin – Settings</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+    {% set active = 'settings' %}
+    {% include 'partials/admin_sidebar.html' %}
+    <main class="main-content">
+        <header class="top-bar">
+            <div>
+                <h1 class="page-title">Settings</h1>
+                <p class="page-subtitle">Platform configuration</p>
+            </div>
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+        {% endwith %}
+
+        <div class="panel form-panel">
+            <form method="POST" class="admin-form">
+                <div class="form-section-title">Currency</div>
+                <div class="form-group">
+                    <label>Default currency</label>
+                    <select name="currency">
+                        <option value="USD" {% if currency == 'USD' %}selected{% endif %}>USD – US Dollar ($)</option>
+                        <option value="INR" {% if currency == 'INR' %}selected{% endif %}>INR – Indian Rupee (₹)</option>
+                        <option value="AED" {% if currency == 'AED' %}selected{% endif %}>AED – UAE Dirham</option>
+                    </select>
+                    <span class="form-hint">Used for all prices across admin and client portal</span>
+                </div>
+
+                <div class="form-section-title">Company</div>
+                <div class="form-group"><label>Company name</label><input name="company_name" value="{{ company_name }}"></div>
+                <div class="form-row">
+                    <div class="form-group"><label>Support email</label><input type="email" name="support_email" value="{{ support_email }}"></div>
+                    <div class="form-group"><label>Support phone</label><input name="support_phone" value="{{ support_phone }}"></div>
+                </div>
+                <div class="form-group"><label>Office address</label><input name="address" value="{{ address }}" placeholder="Street, city"></div>
+                <div class="form-group"><label>Timezone</label>
+                    <select name="timezone">
+                        {% for tz in ['Asia/Kolkata', 'Asia/Dubai', 'UTC', 'America/New_York', 'Europe/London'] %}
+                        <option value="{{ tz }}" {% if timezone == tz %}selected{% endif %}>{{ tz }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary">Save settings</button>
+            </form>
+        </div>
+
+        <div class="panel form-panel" style="margin-top:0">
+            <div class="form-section-title">Demo logins</div>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Role</th><th>Email</th><th>Password</th></tr></thead>
+                    <tbody>
+                        <tr><td><span class="badge badge-admin">Admin</span></td><td>admin@estacle.com</td><td>admin123</td></tr>
+                        <tr><td><span class="badge badge-agent">Agent</span></td><td>agent@estacle.com</td><td>agent123</td></tr>
+                        <tr><td><span class="badge badge-customer">Customer</span></td><td>customer@estacle.com</td><td>customer123</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

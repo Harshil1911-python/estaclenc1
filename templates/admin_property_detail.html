@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estacle | {{ prop.title }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .gallery-main { width:100%; max-height:380px; border-radius:14px; overflow:hidden; background:#e2e8f0; margin-bottom:12px; }
+        .gallery-main img { width:100%; height:380px; object-fit:cover; display:block; }
+        .gallery-thumbs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:24px; }
+        .gallery-thumbs img { width:88px; height:64px; object-fit:cover; border-radius:8px; cursor:pointer; border:2px solid transparent; }
+        .gallery-thumbs img.active, .gallery-thumbs img:hover { border-color:#2563eb; }
+        .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+        .detail-card { background:#fff; border:1px solid #e2e8f0; border-radius:12px; padding:20px; }
+        .detail-card h3 { font-size:13px; font-weight:600; color:#2563eb; text-transform:uppercase; letter-spacing:.4px; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid #f1f5f9; }
+        .detail-row { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid #f8fafc; font-size:13.5px; }
+        .detail-row span:first-child { color:#64748b; }
+        .detail-row span:last-child { font-weight:600; color:#0f172a; text-align:right; }
+        .no-photo { height:220px; display:flex; align-items:center; justify-content:center; color:#94a3b8; background:#f1f5f9; border-radius:14px; }
+        .amenity-tags { display:flex; flex-wrap:wrap; gap:8px; }
+        .amenity-tags span { background:#eff6ff; color:#2563eb; font-size:12px; font-weight:600; padding:5px 10px; border-radius:6px; }
+        @media(max-width:700px){ .detail-grid { grid-template-columns:1fr; } }
+    </style>
+</head>
+<body>
+<div class="app-layout">
+    {% set active = 'property_detail' %}
+    {% include 'partials/admin_sidebar.html' %}
+    <main class="main-content">
+        <header class="top-bar">
+            <div>
+                <h1 class="page-title">{{ prop.title }}</h1>
+                <p class="page-subtitle">
+                    {{ format_money(prop.price, currency) }}
+                    · <span class="badge badge-{{ prop.status }}">{{ prop.status }}</span>
+                    · {{ prop.property_type }} · {{ prop.listing_type or 'sale' }}
+                </p>
+            </div>
+            <div class="top-bar-actions">
+                <a href="{{ url_for('admin.admin_edit_property', prop_id=prop.id) }}" class="btn-primary">Edit</a>
+                <a href="{{ url_for('admin.admin_properties') }}" class="btn-secondary">Back</a>
+            </div>
+        </header>
+
+        <div style="padding:0 32px 32px">
+            {% if photos %}
+            <div class="gallery-main" onclick="openLightbox(0)">
+                <img id="mainPhoto" src="{{ url_for('static', filename='uploads/properties/' + photos[0]) }}" alt="{{ prop.title }}">
+                <span class="zoom-hint">Click to enlarge</span>
+            </div>
+            {% if photos|length > 1 %}
+            <div class="gallery-thumbs">
+                {% for ph in photos %}
+                <img src="{{ url_for('static', filename='uploads/properties/' + ph) }}" class="{% if loop.first %}active{% endif %}"
+                     onclick="event.stopPropagation(); setMain({{ loop.index0 }}); openLightbox({{ loop.index0 }})">
+                {% endfor %}
+            </div>
+            {% endif %}
+            <div class="lightbox" id="lightbox" onclick="if(event.target===this)closeLightbox()">
+                <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+                <button class="lightbox-prev" onclick="event.stopPropagation(); navLightbox(-1)">‹</button>
+                <img id="lbImg" src="" alt="">
+                <button class="lightbox-next" onclick="event.stopPropagation(); navLightbox(1)">›</button>
+                <div class="lightbox-counter" id="lbCounter"></div>
+            </div>
+            <script>
+            const photoUrls = [{% for ph in photos %}"{{ url_for('static', filename='uploads/properties/' + ph) }}"{% if not loop.last %},{% endif %}{% endfor %}];
+            let lbIndex = 0;
+            function setMain(i) {
+                lbIndex = i;
+                document.getElementById('mainPhoto').src = photoUrls[i];
+                document.querySelectorAll('.gallery-thumbs img').forEach((el, idx) => el.classList.toggle('active', idx === i));
+            }
+            function openLightbox(i) {
+                lbIndex = i;
+                document.getElementById('lbImg').src = photoUrls[i];
+                document.getElementById('lbCounter').textContent = (i+1) + ' / ' + photoUrls.length;
+                document.getElementById('lightbox').classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+            function closeLightbox() {
+                document.getElementById('lightbox').classList.remove('open');
+                document.body.style.overflow = '';
+            }
+            function navLightbox(dir) {
+                lbIndex = (lbIndex + dir + photoUrls.length) % photoUrls.length;
+                document.getElementById('lbImg').src = photoUrls[lbIndex];
+                document.getElementById('lbCounter').textContent = (lbIndex+1) + ' / ' + photoUrls.length;
+                setMain(lbIndex);
+            }
+            document.addEventListener('keydown', e => {
+                if (!document.getElementById('lightbox').classList.contains('open')) return;
+                if (e.key === 'Escape') closeLightbox();
+                if (e.key === 'ArrowLeft') navLightbox(-1);
+                if (e.key === 'ArrowRight') navLightbox(1);
+            });
+            </script>
+            {% else %}
+            <div class="no-photo">No photos uploaded</div>
+            {% endif %}
+
+            <div class="detail-grid">
+                <div class="detail-card">
+                    <h3>Property info</h3>
+                    <div class="detail-row"><span>Type</span><span>{{ prop.property_type }}</span></div>
+                    <div class="detail-row"><span>Category</span><span>{{ prop.category or '—' }}</span></div>
+                    <div class="detail-row"><span>Listing</span><span>{{ prop.listing_type or 'sale' }}</span></div>
+                    <div class="detail-row"><span>Status</span><span>{{ prop.status }}</span></div>
+                    <div class="detail-row"><span>Furnishing</span><span>{{ prop.furnishing or '—' }}</span></div>
+                    <div class="detail-row"><span>Floor</span><span>{{ prop.floor or '—' }}</span></div>
+                    <div class="detail-row"><span>Year built</span><span>{{ prop.year_built or '—' }}</span></div>
+                    <div class="detail-row"><span>Facing</span><span>{{ prop.facing or '—' }}</span></div>
+                    <div class="detail-row"><span>Agent</span><span>{{ prop.agent_name or '—' }}</span></div>
+                </div>
+                <div class="detail-card">
+                    <h3>Size & pricing</h3>
+                    <div class="detail-row"><span>Bedrooms</span><span>{{ prop.bedrooms or '—' }}</span></div>
+                    <div class="detail-row"><span>Bathrooms</span><span>{{ prop.bathrooms or '—' }}</span></div>
+                    <div class="detail-row"><span>Built-up</span><span>{% if prop.area_sqft %}{{ prop.area_sqft }} sqft{% else %}—{% endif %}</span></div>
+                    <div class="detail-row"><span>Carpet</span><span>{% if prop.carpet_area %}{{ prop.carpet_area }} sqft{% else %}—{% endif %}</span></div>
+                    <div class="detail-row"><span>List price</span><span>{{ format_money(prop.price, currency) }}</span></div>
+                    <div class="detail-row"><span>Per sqft</span><span>{{ format_money(prop.per_sqft, currency) if prop.per_sqft else '—' }}</span></div>
+                    <div class="detail-row"><span>Monthly rent</span><span>{{ format_money(prop.monthly_rent, currency) if prop.monthly_rent else '—' }}</span></div>
+                    <div class="detail-row"><span>Deposit</span><span>{{ format_money(prop.security_deposit, currency) if prop.security_deposit else '—' }}</span></div>
+                    <div class="detail-row"><span>Maintenance</span><span>{{ format_money(prop.maintenance, currency) if prop.maintenance else '—' }}</span></div>
+                    <div class="detail-row"><span>Parking</span><span>{{ prop.parking or '—' }}</span></div>
+                </div>
+                <div class="detail-card">
+                    <h3>Location</h3>
+                    <div class="detail-row"><span>Address</span><span>{{ prop.address or '—' }}</span></div>
+                    <div class="detail-row"><span>City</span><span>{{ prop.city or '—' }}</span></div>
+                    <div class="detail-row"><span>State</span><span>{{ prop.state or '—' }}</span></div>
+                    <div class="detail-row"><span>PIN / ZIP</span><span>{{ prop.zip_code or '—' }}</span></div>
+                    {% if prop.latitude and prop.longitude %}
+                    <div class="detail-row"><span>Coords</span><span>{{ prop.latitude }}, {{ prop.longitude }}</span></div>
+                    <div style="margin-top:10px">
+                        <a class="btn-secondary" target="_blank" href="https://www.google.com/maps?q={{ prop.latitude }},{{ prop.longitude }}">Open in Maps</a>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="detail-card">
+                    <h3>Owner / seller</h3>
+                    <div class="detail-row"><span>Name</span><span>{{ prop.seller_name or '—' }}</span></div>
+                    <div class="detail-row"><span>Phone</span><span>{{ prop.seller_phone or '—' }}</span></div>
+                    {% if prop.amenities %}
+                    <h3 style="margin-top:16px">Amenities</h3>
+                    <div class="amenity-tags">
+                        {% for a in prop.amenities.split(',') %}
+                        <span>{{ a.strip() }}</span>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                {% if prop.description %}
+                <div class="detail-card" style="grid-column:1/-1">
+                    <h3>Description</h3>
+                    <p style="font-size:14px;line-height:1.7;color:#475569">{{ prop.description }}</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

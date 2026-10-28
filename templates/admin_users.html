@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estacle | Admin – Users</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+    {% set active = 'users' %}
+    {% include 'partials/admin_sidebar.html' %}
+    <main class="main-content">
+        <header class="top-bar">
+            <div>
+                <h1 class="page-title">User Management</h1>
+                <p class="page-subtitle">Manage all platform users and roles</p>
+            </div>
+            <a href="{{ url_for('admin.admin_export_users') }}" class="btn-secondary">Export CSV</a>
+                <a href="{{ url_for('admin.admin_add_user') }}" class="btn-primary">Add User</a>
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+        {% endwith %}
+
+        <div class="toolbar">
+            <form method="GET" action="{{ url_for('admin.admin_users') }}" class="search-form">
+                <input type="text" name="q" value="{{ q or '' }}" placeholder="Search name, email, phone...">
+                <select name="role">
+                    <option value="">All roles</option>
+                    <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+                    <option value="agent" {% if role_filter == 'agent' %}selected{% endif %}>Agent</option>
+                    <option value="customer" {% if role_filter == 'customer' %}selected{% endif %}>Customer</option>
+                </select>
+                <button type="submit" class="btn-primary">Search</button>
+                {% if q or role_filter %}
+                <a href="{{ url_for('admin.admin_users') }}" class="btn-secondary">Clear</a>
+                {% endif %}
+            </form>
+        </div>
+
+        <div class="panel full">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th><th>Phone</th><th>Joined</th><th>Status</th><th>Action</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr>
+                            <td>{{ u.id }}</td>
+                            <td>{{ u.full_name }}</td>
+                            <td>{{ u.email }}</td>
+                            <td><span class="badge badge-{{ u.role }}">{{ u.role }}</span></td>
+                            <td>{{ u.phone or '—' }}</td>
+                            <td>{{ u.created_at[:10] if u.created_at else '—' }}</td>
+                            <td>{% if u.is_active %}<span class="status-active">Active</span>{% else %}<span class="status-inactive">Inactive</span>{% endif %}</td>
+                            <td class="actions-cell">
+                                <a href="{{ url_for('admin.admin_edit_user', user_id=u.id) }}" class="btn-sm btn-edit">Edit</a>
+                                {% if u.id != session.user_id %}
+                                <form method="POST" action="{{ url_for('admin.admin_toggle_user', user_id=u.id) }}" style="display:inline;">
+                                    <button type="submit" class="btn-sm {{ 'btn-danger' if u.is_active else 'btn-success' }}">
+                                        {{ 'Deactivate' if u.is_active else 'Activate' }}
+                                    </button>
+                                </form>
+                                {% else %}<span class="text-muted">You</span>{% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="8" class="empty">No users found</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estacle | Admin – Add Client</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+    {% set active = 'add_client' %}
+    {% include 'partials/admin_sidebar.html' %}
+    <main class="main-content">
+        <header class="top-bar">
+            <div>
+                <h1 class="page-title">Add Client</h1>
+                <p class="page-subtitle">Create a new client or sales lead</p>
+            </div>
+            <a href="{{ url_for('admin.admin_clients') }}" class="btn-secondary">Back to Clients</a>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+        {% endwith %}
+
+        <div class="form-page-hero">
+            <h2>New client / lead</h2>
+            <p>Capture contact details and pipeline status. Assign an agent so they can follow up and schedule viewings.</p>
+        </div>
+
+        <div class="panel form-panel">
+            <form method="POST" class="admin-form">
+                <div class="form-section-title">Contact Details</div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Full Name *</label>
+                        <input type="text" name="full_name" placeholder="e.g. Sarah Johnson" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" placeholder="sarah@email.com">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Phone</label>
+                        <input type="text" name="phone" placeholder="+1-555-0100">
+                    </div>
+                    <div class="form-group">
+                        <label>Pipeline Status</label>
+                        <select name="status">
+                            <option value="lead">Lead — new inquiry</option>
+                            <option value="contacted">Contacted</option>
+                            <option value="qualified">Qualified</option>
+                            <option value="negotiation">Negotiation</option>
+                            <option value="closed">Closed — deal done</option>
+                            <option value="lost">Lost</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-section-title">Assignment</div>
+                <div class="form-group">
+                    <label>Assign to Agent</label>
+                    <select name="agent_id">
+                        <option value="">— Unassigned —</option>
+                        {% for a in agents %}<option value="{{ a.id }}">{{ a.full_name }}</option>{% endfor %}
+                    </select>
+                    <span class="form-hint">Agent will see this client in their workspace</span>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea name="notes" placeholder="Budget, preferred areas, timeline, preferences..."></textarea>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">Save Client</button>
+                    <a href="{{ url_for('admin.admin_clients') }}" class="btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </main>
+</div>
+</body>
+</html>

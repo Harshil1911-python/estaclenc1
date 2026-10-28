@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estacle Analytics Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #e8ecf1;
+            color: #0f172a;
+            line-height: 1.45;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        a { color: inherit; text-decoration: none; }
+        a[href]::after { content: none !important; }
+
+        .toolbar {
+            position: sticky; top: 0; z-index: 20;
+            background: #0f172a; color: #fff;
+            padding: 12px 28px;
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        }
+        .toolbar p { font-size: 13px; color: #94a3b8; }
+        .toolbar-actions { display: flex; gap: 8px; }
+        .toolbar a, .toolbar button {
+            height: 36px; padding: 0 16px; border-radius: 8px;
+            font-size: 13px; font-weight: 600; font-family: inherit;
+            border: none; cursor: pointer; text-decoration: none;
+            display: inline-flex; align-items: center;
+        }
+        .btn-print { background: #3b82f6; color: #fff; }
+        .btn-back { background: #1e293b; color: #e2e8f0; }
+
+        .page {
+            max-width: 820px;
+            margin: 28px auto 56px;
+            background: #fff;
+            border-radius: 4px;
+            box-shadow: 0 10px 40px rgba(15,23,42,0.08);
+            overflow: hidden;
+        }
+
+        .report-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 32px 40px;
+            border-bottom: 1px solid #e8ecf1;
+            background: #fff;
+        }
+        .brand { display: flex; align-items: center; gap: 16px; }
+        .brand img { height: 56px; width: auto; object-fit: contain; }
+        .brand-text h1 {
+            font-size: 20px; font-weight: 700; color: #0f172a;
+            letter-spacing: -0.02em;
+        }
+        .brand-text p { font-size: 13px; color: #64748b; margin-top: 3px; }
+        .meta { text-align: right; font-size: 13px; color: #64748b; }
+        .meta strong { display: block; color: #0f172a; font-size: 14px; margin-bottom: 4px; font-weight: 600; }
+
+        .section { padding: 28px 40px; }
+        .section + .section { border-top: 1px solid #f1f5f9; }
+        .section h2 {
+            font-size: 12px; font-weight: 700; color: #64748b;
+            text-transform: uppercase; letter-spacing: 0.08em;
+            margin-bottom: 18px;
+        }
+
+        .kpi-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+        }
+        .kpi {
+            border: 1px solid #e8ecf1;
+            border-radius: 12px;
+            padding: 16px 18px;
+            background: #fafbfc;
+        }
+        .kpi .label {
+            font-size: 11px; font-weight: 600; color: #94a3b8;
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .kpi .value {
+            font-size: 26px; font-weight: 700; color: #0f172a;
+            margin-top: 8px; letter-spacing: -0.03em;
+        }
+        .kpi .sub { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 32px;
+        }
+
+        .funnel {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            padding: 10px 0 4px;
+        }
+        .funnel-step {
+            height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 12px; font-weight: 600;
+            clip-path: polygon(5% 0, 95% 0, 91% 100%, 9% 100%);
+        }
+        .funnel-step:first-child { clip-path: polygon(0 0, 100% 0, 94% 100%, 6% 100%); }
+        .funnel-step:last-child { clip-path: polygon(12% 0, 88% 0, 84% 100%, 16% 100%); }
+
+        table.data { width: 100%; border-collapse: collapse; font-size: 13px; }
+        table.data th {
+            text-align: left;
+            font-size: 11px; font-weight: 600; color: #94a3b8;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            padding: 10px 12px;
+            border-bottom: 2px solid #e8ecf1;
+        }
+        table.data td {
+            padding: 11px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            color: #334155;
+        }
+        table.data tr:last-child td { border-bottom: none; }
+
+        .bars { display: flex; flex-direction: column; gap: 12px; }
+        .bar-row {
+            display: grid;
+            grid-template-columns: 100px 1fr 40px;
+            align-items: center; gap: 10px; font-size: 12.5px;
+        }
+        .bar-row .name { color: #475569; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .bar-track { height: 10px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 99px; background: #3b82f6; }
+        .bar-row .cnt { text-align: right; font-weight: 600; color: #0f172a; }
+
+        .month-bars {
+            display: flex; align-items: flex-end; gap: 12px;
+            height: 130px; padding-top: 8px;
+        }
+        .month-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; }
+        .month-col .stack { display: flex; align-items: flex-end; gap: 3px; height: 100px; width: 100%; justify-content: center; }
+        .month-col .b { width: 11px; border-radius: 3px 3px 0 0; min-height: 2px; }
+        .month-col .b.p { background: #3b82f6; }
+        .month-col .b.d { background: #8b5cf6; }
+        .month-col .lab { font-size: 10px; color: #94a3b8; }
+
+        .legend { display: flex; gap: 18px; margin-top: 14px; font-size: 12px; color: #64748b; }
+        .legend i {
+            display: inline-block; width: 10px; height: 10px; border-radius: 2px;
+            margin-right: 6px; vertical-align: middle;
+        }
+
+        .report-footer {
+            padding: 18px 40px 28px;
+            border-top: 1px solid #e8ecf1;
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 11.5px; color: #94a3b8;
+        }
+        .report-footer strong { color: #64748b; }
+
+        @page {
+            size: A4;
+            margin: 12mm;
+        }
+
+        @media print {
+            html, body {
+                background: #fff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .toolbar { display: none !important; }
+            .page {
+                margin: 0 !important;
+                max-width: none !important;
+                width: 100% !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+            }
+            a { text-decoration: none !important; }
+            a[href]::after { content: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <p>Estacle analytics report</p>
+        <div class="toolbar-actions">
+            <a class="btn-back" href="{{ url_for('admin.admin_analytics', **{'from': from_date, 'to': to_date}) }}">Back to analytics</a>
+            <button class="btn-print" type="button" onclick="window.print()">Save as PDF</button>
+        </div>
+    </div>
+
+    <div class="page">
+        <div class="report-header">
+            <div class="brand">
+                <img src="{{ url_for('static', filename='images/logo.png') }}" alt="Estacle">
+                <div class="brand-text">
+                    <h1>Analytics Report</h1>
+                    <p>Real estate performance overview</p>
+                </div>
+            </div>
+            <div class="meta">
+                <strong>{{ from_date }} to {{ to_date }}</strong>
+                Estacle CRM
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Key metrics</h2>
+            <div class="kpi-row">
+                <div class="kpi">
+                    <div class="label">Total Properties</div>
+                    <div class="value">{{ stats.total_properties }}</div>
+                    <div class="sub">All listing statuses</div>
+                </div>
+                <div class="kpi">
+                    <div class="label">Available</div>
+                    <div class="value">{{ stats.available }}</div>
+                    <div class="sub">Currently listed</div>
+                </div>
+                <div class="kpi">
+                    <div class="label">Closed Deals</div>
+                    <div class="value">{{ stats.closed_deals }}</div>
+                    <div class="sub">In selected period</div>
+                </div>
+                <div class="kpi">
+                    <div class="label">Total Leads</div>
+                    <div class="value">{{ stats.total_leads }}</div>
+                    <div class="sub">All sources</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="two-col">
+                <div>
+                    <h2>Deal pipeline</h2>
+                    <div class="funnel">
+                        {% set max_cnt = stage_counts|max if stage_counts else 0 %}
+                        {% if stage_labels and max_cnt > 0 %}
+                            {% set colors = ['#3b82f6','#6366f1','#8b5cf6','#10b981','#94a3b8'] %}
+                            {% set n = stage_labels|length %}
+                            {% for i in range(n) %}
+                                {% set w = 100 - (i * (42 / (n if n > 1 else 1))) %}
+                                <div class="funnel-step" style="width: {{ w }}%; background: {{ colors[i % 5] }};">
+                                    {{ stage_labels[i] }}  {{ stage_counts[i] }}
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p style="color:#94a3b8;font-size:13px;">No pipeline data for this period</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <h2>Pipeline detail</h2>
+                    <table class="data">
+                        <thead>
+                            <tr>
+                                <th>Stage</th>
+                                <th>Deals</th>
+                                <th>Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for row in by_stage %}
+                        <tr>
+                            <td>{{ row['stage']|replace('_', ' ')|title }}</td>
+                            <td>{{ row['cnt'] }}</td>
+                            <td>{{ format_money(row['total_value'], 'INR') }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="3">No deals</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="two-col">
+                <div>
+                    <h2>Property distribution</h2>
+                    {% set max_t = max_type_count if max_type_count else 1 %}
+                    <div class="bars">
+                        {% for i in range(type_labels|length) %}
+                        <div class="bar-row">
+                            <div class="name">{{ type_labels[i] }}</div>
+                            <div class="bar-track">
+                                <div class="bar-fill" style="width: {{ (type_counts[i] / max_t * 100) if max_t else 0 }}%;"></div>
+                            </div>
+                            <div class="cnt">{{ type_counts[i] }}</div>
+                        </div>
+                        {% else %}
+                        <p style="color:#94a3b8;font-size:13px;">No data</p>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div>
+                    <h2>Top cities</h2>
+                    <table class="data">
+                        <thead>
+                            <tr>
+                                <th>City</th>
+                                <th>Properties</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for row in by_city %}
+                        <tr>
+                            <td>{{ row['city'] }}</td>
+                            <td>{{ row['cnt'] }}</td>
+                        </tr>
+                        {% else %}
+                        <tr><td colspan="2">No data</td></tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Monthly performance</h2>
+            <div class="month-bars">
+                {% for i in range(month_labels|length) %}
+                <div class="month-col">
+                    <div class="stack">
+                        <div class="b p" style="height: {{ (month_props[i] / max_month_val * 100) if max_month_val else 2 }}px;"></div>
+                        <div class="b d" style="height: {{ (month_deals[i] / max_month_val * 100) if max_month_val else 2 }}px;"></div>
+                    </div>
+                    <div class="lab">{{ month_labels[i][-5:] }}</div>
+                </div>
+                {% else %}
+                <p style="color:#94a3b8;font-size:13px;">No monthly data</p>
+                {% endfor %}
+            </div>
+            <div class="legend">
+                <span><i style="background:#3b82f6"></i>Properties added</span>
+                <span><i style="background:#8b5cf6"></i>Deals closed</span>
+            </div>
+        </div>
+
+        <div class="report-footer">
+            <span><strong>Estacle</strong>  Real Estate CRM</span>
+            <span>Confidential  Internal use only</span>
+        </div>
+    </div>
+
+    <script>
+        // Prefer clean print: try to open print with sensible defaults
+        // User should turn off "Headers and footers" in the print dialog for a clean file
+    </script>
+</body>
+</html>

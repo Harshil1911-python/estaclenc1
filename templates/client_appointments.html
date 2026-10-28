@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estacle | My Appointments</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="app-layout">
+    {% set active = 'appointments' %}
+    {% include 'partials/client_sidebar.html' %}
+    <main class="main-content">
+        <header class="top-bar">
+            <div>
+                <h1 class="page-title">My Appointments</h1>
+                <p class="page-subtitle">Viewings you have requested or scheduled</p>
+            </div>
+            <a href="{{ url_for('client.client_browse') }}" class="btn-primary">Browse properties</a>
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+        {% endwith %}
+        <div class="panel full">
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Property</th><th>City</th><th>Date</th><th>Status</th><th>Notes</th></tr></thead>
+                    <tbody>
+                    {% for a in appointments %}
+                    <tr>
+                        <td>{{ a.property_title or '—' }}</td>
+                        <td>{{ a.property_city or '—' }}</td>
+                        <td>{{ a.appointment_date or '—' }}</td>
+                        <td><span class="badge badge-{{ a.status }}">{{ a.status }}</span></td>
+                        <td>{{ a.notes or '—' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="empty">No appointments yet. Request a viewing from a property page.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>
