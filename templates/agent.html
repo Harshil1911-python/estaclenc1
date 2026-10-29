@@ -206,5 +206,11 @@
         </div>
     </main>
 </div>
+<script>
+(function(){ function goOffline(){ try { navigator.sendBeacon('/presence/offline'); } catch(e) {} }
+window.addEventListener('pagehide', goOffline);
+window.addEventListener('beforeunload', goOffline);
+})();
+</script>
 </body>
 </html>

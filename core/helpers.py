@@ -75,3 +75,20 @@ def get_redirect_for_role(role):
         return url_for('agent.agent_dashboard')
     else:
         return url_for('client.client_dashboard')
+
+
+def highlight_match(text, query):
+    """Wrap case-insensitive matches of query inside text with a yellow highlight span."""
+    if text is None:
+        return ''
+    text = str(text)
+    if not query or not text:
+        return text
+    import re
+    from markupsafe import Markup, escape
+    pattern = re.compile(re.escape(query), re.IGNORECASE)
+
+    def repl(m):
+        return f'<mark class="search-hl">{escape(m.group(0))}</mark>'
+
+    return Markup(pattern.sub(repl, escape(text)))

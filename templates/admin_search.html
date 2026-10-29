@@ -1,45 +1,613 @@
 <!DOCTYPE html>
-<html lang="en"><head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Estacle | Admin – Global Search</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-</head><body>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estacle | Admin – Global Search</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .main-content { padding-bottom: 48px; }
+        .search-wrap {
+            padding: 4px 36px 48px;
+            max-width: 1100px;
+        }
+        .top-bar.dash-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 36px 12px !important;
+            background: transparent;
+            border-bottom: none;
+            box-shadow: none;
+            text-align: left;
+        }
+        .dash-top .page-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0 0 2px;
+            letter-spacing: -0.02em;
+        }
+        .dash-top .page-subtitle {
+            font-size: 13.5px;
+            color: #64748b;
+            margin: 0;
+        }
+        .search-hero {
+            background: #fff;
+            border: 1px solid #e8ecf1;
+            border-radius: 18px;
+            padding: 20px 22px;
+            margin-bottom: 22px;
+            box-shadow: 0 1px 3px rgba(15,23,42,0.05);
+        }
+        .search-hero-form {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+        }
+        .search-hero-form .search-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 18px;
+            color: #94a3b8;
+            pointer-events: none;
+        }
+        .search-hero-form input[type="search"] {
+            flex: 1;
+            height: 48px;
+            padding: 0 16px 0 44px;
+            border: 1px solid #e8ecf1;
+            border-radius: 12px;
+            background: #f8fafc;
+            font-size: 15px;
+            font-family: inherit;
+            color: #0f172a;
+            outline: none;
+            transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+            box-sizing: border-box;
+        }
+        .search-hero-form input[type="search"]::placeholder { color: #94a3b8; }
+        .search-hero-form input[type="search"]:focus {
+            border-color: #c7d2fe;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+        }
+        .search-hero-form .btn-search {
+            height: 48px;
+            padding: 0 22px;
+            background: #1e1b4b;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.15s;
+            white-space: nowrap;
+        }
+        .search-hero-form .btn-search:hover { background: #312e81; }
+
+        mark.search-hl {
+            background: #fde047;
+            color: inherit;
+            padding: 1px 3px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        .result-section {
+            background: #fff;
+            border: 1px solid #e8ecf1;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(15,23,42,0.04);
+            overflow: hidden;
+        }
+        .result-section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 20px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .result-section-header h3 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .result-section-header .count {
+            font-size: 12px;
+            font-weight: 600;
+            color: #64748b;
+            background: #f1f5f9;
+            padding: 3px 10px;
+            border-radius: 999px;
+        }
+        .result-section table { width: 100%; border-collapse: collapse; }
+        .result-section th {
+            text-align: left;
+            font-size: 11.5px;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding: 10px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            background: #fafbfc;
+        }
+        .result-section td {
+            padding: 12px 20px;
+            font-size: 13.5px;
+            color: #334155;
+            border-bottom: 1px solid #f8fafc;
+        }
+        .result-section tr:last-child td { border-bottom: none; }
+        .result-section tr:hover td { background: #f8fafc; }
+        .result-section .empty {
+            text-align: center;
+            color: #94a3b8;
+            padding: 28px 20px;
+            font-size: 13.5px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 11.5px;
+            font-weight: 600;
+            text-transform: capitalize;
+        }
+        .badge-role { background: #eef2ff; color: #4f46e5; }
+        .badge-status { background: #f0fdf4; color: #16a34a; }
+        .badge-stage { background: #fff7ed; color: #ea580c; }
+        .btn-sm {
+            display: inline-flex;
+            align-items: center;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 12.5px;
+            font-weight: 600;
+            text-decoration: none;
+            background: #eef2ff;
+            color: #4f46e5;
+            border: 1px solid #c7d2fe;
+            transition: all 0.15s;
+        }
+        .btn-sm:hover { background: #e0e7ff; }
+
+        .no-query {
+            text-align: center;
+            padding: 36px 24px;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+        .no-query svg {
+            width: 36px;
+            height: 36px;
+            margin-bottom: 10px;
+            color: #cbd5e1;
+        }
+
+        .empty-state {
+            background: #fff;
+            border: 1px solid #e8ecf1;
+            border-radius: 16px;
+            padding: 28px 24px 24px;
+            box-shadow: 0 1px 3px rgba(15,23,42,0.04);
+        }
+        .empty-state-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #0f172a;
+            margin: 0 0 6px;
+            text-align: center;
+        }
+        .empty-state-sub {
+            font-size: 13.5px;
+            color: #94a3b8;
+            margin: 0 0 20px;
+            text-align: center;
+        }
+        .search-cats {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+        @media (max-width: 900px) {
+            .search-cats { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 560px) {
+            .search-cats { grid-template-columns: repeat(2, 1fr); }
+        }
+        a.search-cat {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 6px;
+            padding: 14px 16px;
+            border: 1px solid #e8ecf1;
+            border-radius: 12px;
+            background: #fafbfc;
+            text-decoration: none;
+            transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+            cursor: pointer;
+        }
+        a.search-cat:hover {
+            border-color: #cbd5e1;
+            background: #f8fafc;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
+        }
+        a.search-cat.active {
+            border-color: #94a3b8;
+            background: #f8fafc;
+        }
+        a.search-cat .cat-icon {
+            width: 18px;
+            height: 18px;
+            color: #0f172a;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+        a.search-cat .cat-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #334155;
+        }
+        a.search-cat .cat-count {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        .back-all {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #4f46e5;
+            text-decoration: none;
+            margin-bottom: 14px;
+        }
+        .back-all:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
 <div class="app-layout">
-{% set active = 'search' %}
-{% include 'partials/admin_sidebar.html' %}
-<main class="main-content">
-<header class="top-bar"><div><h1 class="page-title">Global Search</h1><p class="page-subtitle">Search users, properties, clients, deals</p></div></header>
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
-{% endwith %}
+    {% set active = 'search' %}
+    {% include 'partials/admin_sidebar.html' %}
 
-<form method="GET" style="padding:0 32px 16px;display:flex;gap:10px">
-<input name="q" value="{{ q }}" placeholder="Type to search…" style="flex:1;max-width:420px;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px">
-<button class="btn-primary" type="submit">Search</button>
-</form>
-{% if q %}
-<div class="panel full"><h3 style="padding:16px 20px 8px;font-size:14px">Users</h3>
-<div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th></tr></thead><tbody>
-{% for u in results.users %}<tr><td>{{ u.full_name }}</td><td>{{ u.email }}</td><td>{{ u.role }}</td></tr>
-{% else %}<tr><td colspan="3" class="empty">None</td></tr>{% endfor %}
-</tbody></table></div></div>
-<div class="panel full"><h3 style="padding:16px 20px 8px;font-size:14px">Properties</h3>
-<div class="table-wrap"><table><thead><tr><th>Title</th><th>City</th><th>Price</th><th>Status</th><th></th></tr></thead><tbody>
-{% for p in results.properties %}<tr><td>{{ p.title }}</td><td>{{ p.city }}</td><td>{{ format_money(p.price, currency) }}</td><td>{{ p.status }}</td>
-<td><a class="btn-sm btn-edit" href="{{ url_for('admin.admin_property_detail', prop_id=p.id) }}">View</a></td></tr>
-{% else %}<tr><td colspan="5" class="empty">None</td></tr>{% endfor %}
-</tbody></table></div></div>
-<div class="panel full"><h3 style="padding:16px 20px 8px;font-size:14px">Clients</h3>
-<div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Status</th></tr></thead><tbody>
-{% for c in results.clients %}<tr><td>{{ c.full_name }}</td><td>{{ c.email }}</td><td>{{ c.status }}</td></tr>
-{% else %}<tr><td colspan="3" class="empty">None</td></tr>{% endfor %}
-</tbody></table></div></div>
-<div class="panel full"><h3 style="padding:16px 20px 8px;font-size:14px">Deals</h3>
-<div class="table-wrap"><table><thead><tr><th>Title</th><th>Stage</th><th>Value</th></tr></thead><tbody>
-{% for d in results.deals %}<tr><td>{{ d.title }}</td><td>{{ d.stage }}</td><td>{{ format_money(d.value, currency) }}</td></tr>
-{% else %}<tr><td colspan="3" class="empty">None</td></tr>{% endfor %}
-</tbody></table></div></div>
-{% endif %}
+    <main class="main-content">
+        <header class="top-bar dash-top">
+            <div>
+                <h1 class="page-title">Global Search</h1>
+                <p class="page-subtitle">Search across users, properties, clients, deals, leads & more</p>
+            </div>
+        </header>
 
-</main></div></body></html>
+        <div class="search-wrap">
+            <div class="search-hero">
+                <form class="search-hero-form" method="GET" action="{{ url_for('admin.admin_search') }}" role="search">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="search" name="q" value="{{ q }}" placeholder="Search With Estacle" autofocus autocomplete="off">
+                    {% if stype %}<input type="hidden" name="type" value="{{ stype }}">{% endif %}
+                    <button type="submit" class="btn-search">Search</button>
+                </form>
+            </div>
+
+            {% if q or stype %}
+                {% if stype %}
+                <a class="back-all" href="{{ url_for('admin.admin_search') }}">← All categories</a>
+                {% endif %}
+
+                {% if total == 0 %}
+                <div class="result-section">
+                    <div class="no-query">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <div>{% if q %}No results found for “{{ q }}”{% else %}No records in this category{% endif %}</div>
+                    </div>
+                </div>
+                {% endif %}
+
+                {% if results.users %}
+                <div class="result-section">
+                    <div class="result-section-header">
+                        <h3>Users</h3>
+                        <span class="count">{{ results.users|length }}</span>
+                    </div>
+                    <table>
+                        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th></tr></thead>
+                        <tbody>
+                        {% for u in results.users %}
+                        <tr>
+                            <td>{{ u.full_name|highlight(q) if q else u.full_name }}</td>
+                            <td>{{ u.email|highlight(q) if q else u.email }}</td>
+                            <td>{{ (u.phone or '—')|highlight(q) if q else (u.phone or '—') }}</td>
+                            <td><span class="badge badge-role">{{ u.role }}</span></td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+
+                {% if results.properties %}
+                <div class="result-section">
+                    <div class="result-section-header">
+                        <h3>Properties</h3>
+                        <span class="count">{{ results.properties|length }}</span>
+                    </div>
+                    <table>
+                        <thead><tr><th>Title</th><th>City</th><th>Price</th><th>Status</th><th></th></tr></thead>
+                        <tbody>
+                        {% for p in results.properties %}
+                        <tr>
+                            <td>{{ p.title|highlight(q) if q else p.title }}</td>
+                            <td>{{ (p.city or '—')|highlight(q) if q else (p.city or '—') }}</td>
+                            <td>{{ format_money(p.price, currency) }}</td>
+                            <td><span class="badge badge-status">{{ p.status }}</span></td>
+                            <td><a class="btn-sm" href="{{ url_for('admin.admin_property_detail', prop_id=p.id) }}">View</a></td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+
+                {% if results.clients %}
+                <div class="result-section">
+                    <div class="result-section-header">
+                        <h3>Clients</h3>
+                        <span class="count">{{ results.clients|length }}</span>
+                    </div>
+                    <table>
+                        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Status</th></tr></thead>
+                        <tbody>
+                        {% for c in results.clients %}
+                        <tr>
+                            <td>{{ c.full_name|highlight(q) if q else c.full_name }}</td>
+                            <td>{{ (c.email or '—')|highlight(q) if q else (c.email or '—') }}</td>
+                            <td>{{ (c.phone or '—')|highlight(q) if q else (c.phone or '—') }}</td>
+                            <td><span class="badge badge-status">{{ c.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+
+                {% if results.deals %}
+                <div class="result-section">
+                    <div class="result-section-header">
+                        <h3>Deals</h3>
+                        <span class="count">{{ results.deals|length }}</span>
+                    </div>
+                    <table>
+                        <thead><tr><th>Title</th><th>Stage</th><th>Value</th></tr></thead>
+                        <tbody>
+                        {% for d in results.deals %}
+                        <tr>
+                            <td>{{ d.title|highlight(q) if q else d.title }}</td>
+                            <td><span class="badge badge-stage">{{ d.stage }}</span></td>
+                            <td>{{ format_money(d.value, currency) }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+
+                {% if results.leads %}
+                <div class="result-section">
+                    <div class="result-section-header">
+                        <h3>Leads</h3>
+                        <span class="count">{{ results.leads|length }}</span>
+                    </div>
+                    <table>
+                        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Source</th><th>Status</th></tr></thead>
+                        <tbody>
+                        {% for l in results.leads %}
+                        <tr>
+                            <td>{{ l.full_name|highlight(q) if q else l.full_name }}</td>
+                            <td>{{ (l.email or '—')|highlight(q) if q else (l.email or '—') }}</td>
+                            <td>{{ (l.phone or '—')|highlight(q) if q else (l.phone or '—') }}</td>
+                            <td>{{ (l.source or '—')|highlight(q) if q else (l.source or '—') }}</td>
+                            <td><span class="badge badge-status">{{ l.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+
+                {% if results.inquiries %}
+                <div class="result-section">
+                    <div class="result-section-header">
+                        <h3>Inquiries</h3>
+                        <span class="count">{{ results.inquiries|length }}</span>
+                    </div>
+                    <table>
+                        <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Property</th><th>Message</th><th>Status</th></tr></thead>
+                        <tbody>
+                        {% for i in results.inquiries %}
+                        <tr>
+                            <td>{{ i.full_name|highlight(q) if q else i.full_name }}</td>
+                            <td>{{ (i.email or '—')|highlight(q) if q else (i.email or '—') }}</td>
+                            <td>{{ (i.phone or '—')|highlight(q) if q else (i.phone or '—') }}</td>
+                            <td>{{ (i.property_title or '—')|highlight(q) if q else (i.property_title or '—') }}</td>
+                            <td>{{ (i.message or '—')|highlight(q) if q else (i.message or '—') }}</td>
+                            <td><span class="badge badge-status">{{ i.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+
+                {% if results.appointments %}
+                <div class="result-section">
+                    <div class="result-section-header">
+                        <h3>Appointments</h3>
+                        <span class="count">{{ results.appointments|length }}</span>
+                    </div>
+                    <table>
+                        <thead><tr><th>Date</th><th>Client</th><th>Property</th><th>Status</th><th>Notes</th></tr></thead>
+                        <tbody>
+                        {% for a in results.appointments %}
+                        <tr>
+                            <td>{{ a.appointment_date or '—' }}</td>
+                            <td>{{ (a.client_name or '—')|highlight(q) if q else (a.client_name or '—') }}</td>
+                            <td>{{ (a.property_title or '—')|highlight(q) if q else (a.property_title or '—') }}</td>
+                            <td><span class="badge badge-status">{{ a.status }}</span></td>
+                            <td>{{ (a.notes or '—')|highlight(q) if q else (a.notes or '—') }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+
+                {% if results.tasks %}
+                <div class="result-section">
+                    <div class="result-section-header">
+                        <h3>Tasks</h3>
+                        <span class="count">{{ results.tasks|length }}</span>
+                    </div>
+                    <table>
+                        <thead><tr><th>Title</th><th>Due</th><th>Priority</th><th>Status</th></tr></thead>
+                        <tbody>
+                        {% for t in results.tasks %}
+                        <tr>
+                            <td>{{ t.title|highlight(q) if q else t.title }}</td>
+                            <td>{{ t.due_date or '—' }}</td>
+                            <td>{{ t.priority or '—' }}</td>
+                            <td><span class="badge badge-status">{{ t.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+
+                {% if results.documents %}
+                <div class="result-section">
+                    <div class="result-section-header">
+                        <h3>Documents</h3>
+                        <span class="count">{{ results.documents|length }}</span>
+                    </div>
+                    <table>
+                        <thead><tr><th>Title</th><th>Type</th><th>Related</th><th>Expiry</th><th>Notes</th></tr></thead>
+                        <tbody>
+                        {% for d in results.documents %}
+                        <tr>
+                            <td>{{ d.title|highlight(q) if q else d.title }}</td>
+                            <td>{{ (d.doc_type or '—')|highlight(q) if q else (d.doc_type or '—') }}</td>
+                            <td>{{ d.related_type or '—' }}</td>
+                            <td>{{ d.expiry_date or '—' }}</td>
+                            <td>{{ (d.notes or '—')|highlight(q) if q else (d.notes or '—') }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+
+                {% if results.activity %}
+                <div class="result-section">
+                    <div class="result-section-header">
+                        <h3>Activity Log</h3>
+                        <span class="count">{{ results.activity|length }}</span>
+                    </div>
+                    <table>
+                        <thead><tr><th>User</th><th>Action</th><th>Entity</th><th>Details</th><th>When</th></tr></thead>
+                        <tbody>
+                        {% for a in results.activity %}
+                        <tr>
+                            <td>{{ (a.user_name or '—')|highlight(q) if q else (a.user_name or '—') }}</td>
+                            <td>{{ a.action|highlight(q) if q else a.action }}</td>
+                            <td>{{ (a.entity_type or '—')|highlight(q) if q else (a.entity_type or '—') }}{% if a.entity_id %} #{{ a.entity_id }}{% endif %}</td>
+                            <td>{{ (a.details or '—')|highlight(q) if q else (a.details or '—') }}</td>
+                            <td>{{ a.created_at or '—' }}</td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+
+            {% else %}
+            <div class="empty-state">
+                <h3 class="empty-state-title">Search everything in Estacle</h3>
+                <p class="empty-state-sub">Type above, or click a category to browse</p>
+                <div class="search-cats">
+                    <a class="search-cat" href="{{ url_for('admin.admin_search', type='users') }}">
+                        <svg class="cat-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        <span class="cat-label">Users</span>
+                        <span class="cat-count">{{ counts.users }} records</span>
+                    </a>
+                    <a class="search-cat" href="{{ url_for('admin.admin_search', type='properties') }}">
+                        <svg class="cat-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                        <span class="cat-label">Properties</span>
+                        <span class="cat-count">{{ counts.properties }} records</span>
+                    </a>
+                    <a class="search-cat" href="{{ url_for('admin.admin_search', type='clients') }}">
+                        <svg class="cat-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+                        <span class="cat-label">Clients</span>
+                        <span class="cat-count">{{ counts.clients }} records</span>
+                    </a>
+                    <a class="search-cat" href="{{ url_for('admin.admin_search', type='deals') }}">
+                        <svg class="cat-icon" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        <span class="cat-label">Deals</span>
+                        <span class="cat-count">{{ counts.deals }} records</span>
+                    </a>
+                    <a class="search-cat" href="{{ url_for('admin.admin_search', type='leads') }}">
+                        <svg class="cat-icon" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <span class="cat-label">Leads</span>
+                        <span class="cat-count">{{ counts.leads }} records</span>
+                    </a>
+                    <a class="search-cat" href="{{ url_for('admin.admin_search', type='inquiries') }}">
+                        <svg class="cat-icon" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                        <span class="cat-label">Inquiries</span>
+                        <span class="cat-count">{{ counts.inquiries }} records</span>
+                    </a>
+                    <a class="search-cat" href="{{ url_for('admin.admin_search', type='appointments') }}">
+                        <svg class="cat-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <span class="cat-label">Appointments</span>
+                        <span class="cat-count">{{ counts.appointments }} records</span>
+                    </a>
+                    <a class="search-cat" href="{{ url_for('admin.admin_search', type='tasks') }}">
+                        <svg class="cat-icon" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        <span class="cat-label">Tasks</span>
+                        <span class="cat-count">{{ counts.tasks }} records</span>
+                    </a>
+                    <a class="search-cat" href="{{ url_for('admin.admin_search', type='documents') }}">
+                        <svg class="cat-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        <span class="cat-label">Documents</span>
+                        <span class="cat-count">{{ counts.documents }} records</span>
+                    </a>
+                    <a class="search-cat" href="{{ url_for('admin.admin_search', type='activity') }}">
+                        <svg class="cat-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        <span class="cat-label">Activity</span>
+                        <span class="cat-count">{{ counts.activity }} records</span>
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</div>
+</body>
+</html>

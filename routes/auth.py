@@ -52,6 +52,14 @@ def login():
             session['email'] = user['email']
             session['full_name'] = user['full_name']
             session['role'] = user['role']
+            try:
+                db.execute(
+                    "UPDATE users SET last_seen = CURRENT_TIMESTAMP WHERE id = ?",
+                    (user['id'],)
+                )
+                db.commit()
+            except Exception:
+                pass
             flash(f'Welcome back, {user["full_name"]}!', 'success')
             return redirect(get_redirect_for_role(user['role']))
         else:
@@ -62,6 +70,14 @@ def login():
 
 @auth.route('/logout')
 def logout():
+    uid = session.get('user_id')
+    if uid:
+        try:
+            db = get_db()
+            db.execute("UPDATE users SET last_seen = NULL WHERE id = ?", (uid,))
+            db.commit()
+        except Exception:
+            pass
     session.clear()
     flash('You have been logged out successfully.', 'info')
     return redirect(url_for('auth.login'))

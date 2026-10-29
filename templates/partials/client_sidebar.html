@@ -37,3 +37,10 @@
         <a href="{{ url_for('auth.logout') }}" class="logout-btn">Sign out</a>
     </div>
 </aside>
+<script>
+(function(){
+  function goOffline(){ try { navigator.sendBeacon('/presence/offline'); } catch(e) {} }
+  window.addEventListener('pagehide', goOffline);
+  window.addEventListener('beforeunload', goOffline);
+})();
+</script>

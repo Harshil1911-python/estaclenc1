@@ -5,7 +5,7 @@
         </div>
     </div>
     <nav class="sidebar-nav">
-        <div class="nav-dropdown {% if active in ['dashboard', 'analytics', 'reports', 'search', 'commission'] %}open{% endif %}">
+        <div class="nav-dropdown {% if active in ['dashboard', 'analytics', 'search'] %}open{% endif %}">
             <button type="button" class="nav-dropdown-toggle" onclick="this.parentElement.classList.toggle('open')">
                 <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
                 <span>Overview</span>
@@ -14,23 +14,14 @@
             <div class="nav-dropdown-menu">
                 <a href="{{ url_for('admin.admin_dashboard') }}" class="nav-subitem {% if active == 'dashboard' %}active{% endif %}">Dashboard</a>
                 <a href="{{ url_for('admin.admin_analytics') }}" class="nav-subitem {% if active == 'analytics' %}active{% endif %}">Analytics</a>
-                <a href="{{ url_for('admin.admin_reports') }}" class="nav-subitem {% if active == 'reports' %}active{% endif %}">Reports</a>
                 <a href="{{ url_for('admin.admin_search') }}" class="nav-subitem {% if active == 'search' %}active{% endif %}">Global Search</a>
-                <a href="{{ url_for('admin.admin_commission') }}" class="nav-subitem {% if active == 'commission' %}active{% endif %}">Commission</a>
             </div>
         </div>
 
-        <div class="nav-dropdown {% if active in ['users', 'add_user'] %}open{% endif %}">
-            <button type="button" class="nav-dropdown-toggle" onclick="this.parentElement.classList.toggle('open')">
-                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                <span>Users</span>
-                <svg class="chevron" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div class="nav-dropdown-menu">
-                <a href="{{ url_for('admin.admin_users') }}" class="nav-subitem {% if active == 'users' %}active{% endif %}">All Users</a>
-                <a href="{{ url_for('admin.admin_add_user') }}" class="nav-subitem {% if active == 'add_user' %}active{% endif %}">Add User</a>
-            </div>
-        </div>
+        <a href="{{ url_for('admin.admin_users') }}" class="nav-item {% if active in ['users', 'add_user', 'edit_user'] %}active{% endif %}">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>Users</span>
+        </a>
 
         <div class="nav-dropdown {% if active in ['properties', 'add_property', 'property_detail', 'display_properties', 'compare'] %}open{% endif %}">
             <button type="button" class="nav-dropdown-toggle" onclick="this.parentElement.classList.toggle('open')">
@@ -145,3 +136,10 @@
         <a href="{{ url_for('auth.logout') }}" class="logout-btn">Log out</a>
     </div>
 </aside>
+<script>
+(function(){
+  function goOffline(){ try { navigator.sendBeacon('/presence/offline'); } catch(e) {} }
+  window.addEventListener('pagehide', goOffline);
+  window.addEventListener('beforeunload', goOffline);
+})();
+</script>

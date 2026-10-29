@@ -247,4 +247,9 @@ def migrate_db():
             db.execute('ALTER TABLE users ADD COLUMN avatar TEXT')
         except Exception:
             pass
+    if 'last_seen' not in ucols:
+        try:
+            db.execute('ALTER TABLE users ADD COLUMN last_seen TIMESTAMP')
+        except Exception:
+            pass
     db.commit()

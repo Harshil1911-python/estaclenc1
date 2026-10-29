@@ -227,9 +227,20 @@ def admin_dashboard():
 @role_required('admin')
 def admin_users():
     db = get_db()
+    migrate_db()
     q = request.args.get('q', '').strip()
     role_filter = request.args.get('role', '').strip()
-    sql = 'SELECT id, full_name, email, role, phone, created_at, is_active FROM users WHERE 1=1'
+    status_filter = request.args.get('status', '').strip()
+    # Online = last_seen within 10 minutes
+    online_sql = (
+        "last_seen IS NOT NULL AND "
+        "datetime(last_seen) >= datetime('now', '-10 minutes')"
+    )
+    sql = (
+        'SELECT id, full_name, email, role, phone, created_at, is_active, last_seen, avatar, '
+        f'CASE WHEN {online_sql} THEN 1 ELSE 0 END AS is_online '
+        'FROM users WHERE 1=1'
+    )
     params = []
     if q:
         sql += ' AND (full_name LIKE ? OR email LIKE ? OR phone LIKE ?)'
@@ -237,9 +248,76 @@ def admin_users():
     if role_filter in ('admin', 'agent', 'customer'):
         sql += ' AND role = ?'
         params.append(role_filter)
+    if status_filter == 'active':
+        sql += ' AND is_active = 1'
+    elif status_filter == 'inactive':
+        sql += ' AND is_active = 0'
+    elif status_filter == 'online':
+        sql += f' AND ({online_sql})'
+    elif status_filter == 'offline':
+        sql += f' AND NOT ({online_sql})'
     sql += ' ORDER BY created_at DESC'
     users = db.execute(sql, params).fetchall()
-    return render_template('admin_users.html', users=users, q=q, role_filter=role_filter)
+    total = db.execute('SELECT COUNT(*) FROM users').fetchone()[0]
+    active_count = db.execute('SELECT COUNT(*) FROM users WHERE is_active = 1').fetchone()[0]
+    online_count = db.execute(
+        f'SELECT COUNT(*) FROM users WHERE {online_sql}'
+    ).fetchone()[0]
+    pct = round((active_count / total) * 100) if total else 0
+    stats = {
+        'total': total,
+        'admins': db.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'").fetchone()[0],
+        'agents': db.execute("SELECT COUNT(*) FROM users WHERE role = 'agent'").fetchone()[0],
+        'customers': db.execute("SELECT COUNT(*) FROM users WHERE role = 'customer'").fetchone()[0],
+        'active': active_count,
+        'online': online_count,
+        'active_pct': pct,
+    }
+    view = request.args.get('view', '').strip()
+    return render_template(
+        'admin_users.html', users=users, q=q, role_filter=role_filter,
+        status_filter=status_filter, stats=stats, view=view
+    )
+
+
+@admin.route('/admin/users/bulk', methods=['POST'])
+@login_required
+@role_required('admin')
+def admin_bulk_users():
+    db = get_db()
+    action = request.form.get('action', '').strip()
+    ids = request.form.getlist('user_ids')
+    ids = [int(i) for i in ids if str(i).isdigit()]
+    if not ids:
+        flash('No users selected.', 'warning')
+        return redirect(url_for('admin.admin_users'))
+    self_id = session.get('user_id')
+    ids = [i for i in ids if i != self_id]
+    if not ids:
+        flash('You cannot apply bulk actions to your own account.', 'warning')
+        return redirect(url_for('admin.admin_users'))
+    placeholders = ','.join('?' * len(ids))
+    if action == 'delete':
+        db.execute(f'DELETE FROM users WHERE id IN ({placeholders})', ids)
+        db.commit()
+        flash(f'{len(ids)} user(s) deleted.', 'success')
+    else:
+        flash('Unknown bulk action.', 'danger')
+    return redirect(url_for('admin.admin_users'))
+
+
+@admin.route('/presence/offline', methods=['POST'])
+def presence_offline():
+    """Mark current user offline (called on tab/app close via sendBeacon)."""
+    uid = session.get('user_id')
+    if uid:
+        try:
+            db = get_db()
+            db.execute("UPDATE users SET last_seen = NULL WHERE id = ?", (uid,))
+            db.commit()
+        except Exception:
+            pass
+    return ('', 204)
 
 
 @admin.route('/admin/users/add', methods=['GET', 'POST'])
@@ -255,23 +333,24 @@ def admin_add_user():
 
         if not full_name or not email or not password or role not in ('admin', 'agent', 'customer'):
             flash('Please fill all required fields correctly.', 'danger')
-            return redirect(url_for('admin.admin_add_user'))
+            return redirect(url_for('admin.admin_users'))
 
         db = get_db()
         existing = db.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
         if existing:
             flash('Email already exists.', 'danger')
-            return redirect(url_for('admin.admin_add_user'))
+            return redirect(url_for('admin.admin_users'))
 
         db.execute(
             'INSERT INTO users (email, password, full_name, role, phone) VALUES (?, ?, ?, ?, ?)',
             (email, generate_password_hash(password), full_name, role, phone)
         )
         db.commit()
+        log_activity('create_user', 'user', None, f'Created user {full_name} ({role})')
         flash(f'User {full_name} created successfully.', 'success')
         return redirect(url_for('admin.admin_users'))
 
-    return render_template('admin_add_user.html')
+    return redirect(url_for('admin.admin_users'))
 
 
 @admin.route('/admin/users/toggle/<int:user_id>', methods=['POST'])
@@ -1258,26 +1337,211 @@ def admin_display_properties():
 @role_required('admin')
 def admin_search():
     q = request.args.get('q', '').strip()
+    stype = request.args.get('type', '').strip().lower()
+    valid_types = {
+        'users', 'properties', 'clients', 'deals', 'leads',
+        'inquiries', 'appointments', 'tasks', 'documents', 'activity',
+    }
+    if stype not in valid_types:
+        stype = ''
+
     db = get_db()
-    results = {'users': [], 'properties': [], 'clients': [], 'deals': []}
+    migrate_db()
+    results = {
+        'users': [], 'properties': [], 'clients': [], 'deals': [],
+        'leads': [], 'inquiries': [], 'appointments': [], 'tasks': [],
+        'documents': [], 'activity': [],
+    }
+    counts = {
+        'users': db.execute('SELECT COUNT(*) FROM users').fetchone()[0],
+        'properties': db.execute('SELECT COUNT(*) FROM properties').fetchone()[0],
+        'clients': db.execute('SELECT COUNT(*) FROM clients').fetchone()[0],
+        'deals': db.execute('SELECT COUNT(*) FROM deals').fetchone()[0],
+        'leads': db.execute('SELECT COUNT(*) FROM leads').fetchone()[0],
+        'inquiries': db.execute('SELECT COUNT(*) FROM inquiries').fetchone()[0],
+        'appointments': db.execute('SELECT COUNT(*) FROM appointments').fetchone()[0],
+        'tasks': db.execute('SELECT COUNT(*) FROM tasks').fetchone()[0],
+        'documents': db.execute('SELECT COUNT(*) FROM documents').fetchone()[0],
+        'activity': db.execute('SELECT COUNT(*) FROM activity_log').fetchone()[0],
+    }
+
+    like = f'%{q}%' if q else None
+    num = None
     if q:
-        like = f'%{q}%'
-        results['users'] = db.execute(
-            "SELECT id, full_name, email, role FROM users WHERE full_name LIKE ? OR email LIKE ? LIMIT 20", (like, like)
-        ).fetchall()
-        results['properties'] = db.execute(
-            "SELECT id, title, city, price, status FROM properties WHERE title LIKE ? OR city LIKE ? OR address LIKE ? LIMIT 20",
-            (like, like, like)
-        ).fetchall()
-        results['clients'] = db.execute(
-            "SELECT id, full_name, email, status FROM clients WHERE full_name LIKE ? OR email LIKE ? OR phone LIKE ? LIMIT 20",
-            (like, like, like)
-        ).fetchall()
-        results['deals'] = db.execute(
-            "SELECT id, title, stage, value FROM deals WHERE title LIKE ? LIMIT 20", (like,)
-        ).fetchall()
+        q_clean = q.replace(',', '').replace('₹', '').replace('$', '').replace('AED', '').strip()
+        try:
+            num = float(q_clean)
+        except ValueError:
+            num = None
+
+    def want(key):
+        return (not stype) or stype == key
+
+    # Load data when searching or when a category type is selected
+    if q or stype:
+        if want('users'):
+            if q:
+                results['users'] = db.execute(
+                    "SELECT id, full_name, email, role, phone FROM users "
+                    "WHERE full_name LIKE ? OR email LIKE ? OR phone LIKE ? LIMIT 50",
+                    (like, like, like)
+                ).fetchall()
+            else:
+                results['users'] = db.execute(
+                    "SELECT id, full_name, email, role, phone FROM users ORDER BY created_at DESC LIMIT 50"
+                ).fetchall()
+
+        if want('properties'):
+            if q:
+                prop_sql = (
+                    "SELECT id, title, city, price, status FROM properties "
+                    "WHERE title LIKE ? OR city LIKE ? OR address LIKE ? OR seller_name LIKE ?"
+                )
+                prop_params = [like, like, like, like]
+                if num is not None:
+                    prop_sql += (
+                        " OR price = ? OR CAST(price AS TEXT) LIKE ? OR bedrooms = ? "
+                        "OR bathrooms = ? OR area_sqft = ? OR monthly_rent = ?"
+                    )
+                    prop_params.extend([num, like, int(num) if num == int(num) else -1, num, num, num])
+                prop_sql += " LIMIT 50"
+                results['properties'] = db.execute(prop_sql, prop_params).fetchall()
+            else:
+                results['properties'] = db.execute(
+                    "SELECT id, title, city, price, status FROM properties ORDER BY created_at DESC LIMIT 50"
+                ).fetchall()
+
+        if want('clients'):
+            if q:
+                results['clients'] = db.execute(
+                    "SELECT id, full_name, email, phone, status FROM clients "
+                    "WHERE full_name LIKE ? OR email LIKE ? OR phone LIKE ? LIMIT 50",
+                    (like, like, like)
+                ).fetchall()
+            else:
+                results['clients'] = db.execute(
+                    "SELECT id, full_name, email, phone, status FROM clients ORDER BY created_at DESC LIMIT 50"
+                ).fetchall()
+
+        if want('deals'):
+            if q:
+                deal_sql = "SELECT id, title, stage, value FROM deals WHERE title LIKE ? OR notes LIKE ?"
+                deal_params = [like, like]
+                if num is not None:
+                    deal_sql += " OR value = ? OR CAST(value AS TEXT) LIKE ? OR commission_rate = ?"
+                    deal_params.extend([num, like, num])
+                deal_sql += " LIMIT 50"
+                results['deals'] = db.execute(deal_sql, deal_params).fetchall()
+            else:
+                results['deals'] = db.execute(
+                    "SELECT id, title, stage, value FROM deals ORDER BY created_at DESC LIMIT 50"
+                ).fetchall()
+
+        if want('leads'):
+            if q:
+                lead_sql = (
+                    "SELECT id, full_name, email, phone, source, interest, status, budget FROM leads "
+                    "WHERE full_name LIKE ? OR email LIKE ? OR phone LIKE ? OR source LIKE ? "
+                    "OR interest LIKE ? OR notes LIKE ?"
+                )
+                lead_params = [like, like, like, like, like, like]
+                if num is not None:
+                    lead_sql += " OR budget = ? OR CAST(budget AS TEXT) LIKE ?"
+                    lead_params.extend([num, like])
+                lead_sql += " LIMIT 50"
+                results['leads'] = db.execute(lead_sql, lead_params).fetchall()
+            else:
+                results['leads'] = db.execute(
+                    "SELECT id, full_name, email, phone, source, interest, status, budget FROM leads "
+                    "ORDER BY created_at DESC LIMIT 50"
+                ).fetchall()
+
+        if want('inquiries'):
+            if q:
+                results['inquiries'] = db.execute(
+                    "SELECT i.id, i.full_name, i.email, i.phone, i.message, i.status, i.property_id, "
+                    "p.title AS property_title FROM inquiries i "
+                    "LEFT JOIN properties p ON i.property_id = p.id "
+                    "WHERE i.full_name LIKE ? OR i.email LIKE ? OR i.phone LIKE ? OR i.message LIKE ? LIMIT 50",
+                    (like, like, like, like)
+                ).fetchall()
+            else:
+                results['inquiries'] = db.execute(
+                    "SELECT i.id, i.full_name, i.email, i.phone, i.message, i.status, i.property_id, "
+                    "p.title AS property_title FROM inquiries i "
+                    "LEFT JOIN properties p ON i.property_id = p.id ORDER BY i.created_at DESC LIMIT 50"
+                ).fetchall()
+
+        if want('appointments'):
+            if q:
+                results['appointments'] = db.execute(
+                    "SELECT a.id, a.appointment_date, a.status, a.notes, "
+                    "c.full_name AS client_name, p.title AS property_title "
+                    "FROM appointments a "
+                    "LEFT JOIN clients c ON a.client_id = c.id "
+                    "LEFT JOIN properties p ON a.property_id = p.id "
+                    "WHERE a.notes LIKE ? OR c.full_name LIKE ? OR p.title LIKE ? LIMIT 50",
+                    (like, like, like)
+                ).fetchall()
+            else:
+                results['appointments'] = db.execute(
+                    "SELECT a.id, a.appointment_date, a.status, a.notes, "
+                    "c.full_name AS client_name, p.title AS property_title "
+                    "FROM appointments a "
+                    "LEFT JOIN clients c ON a.client_id = c.id "
+                    "LEFT JOIN properties p ON a.property_id = p.id "
+                    "ORDER BY a.appointment_date DESC LIMIT 50"
+                ).fetchall()
+
+        if want('tasks'):
+            if q:
+                results['tasks'] = db.execute(
+                    "SELECT id, title, description, due_date, status, priority FROM tasks "
+                    "WHERE title LIKE ? OR description LIKE ? LIMIT 50",
+                    (like, like)
+                ).fetchall()
+            else:
+                results['tasks'] = db.execute(
+                    "SELECT id, title, description, due_date, status, priority FROM tasks "
+                    "ORDER BY created_at DESC LIMIT 50"
+                ).fetchall()
+
+        if want('documents'):
+            if q:
+                results['documents'] = db.execute(
+                    "SELECT id, title, doc_type, related_type, expiry_date, notes FROM documents "
+                    "WHERE title LIKE ? OR doc_type LIKE ? OR notes LIKE ? LIMIT 50",
+                    (like, like, like)
+                ).fetchall()
+            else:
+                results['documents'] = db.execute(
+                    "SELECT id, title, doc_type, related_type, expiry_date, notes FROM documents "
+                    "ORDER BY created_at DESC LIMIT 50"
+                ).fetchall()
+
+        if want('activity'):
+            if q:
+                results['activity'] = db.execute(
+                    "SELECT a.id, a.action, a.entity_type, a.entity_id, a.details, a.created_at, "
+                    "u.full_name AS user_name FROM activity_log a "
+                    "LEFT JOIN users u ON a.user_id = u.id "
+                    "WHERE a.action LIKE ? OR a.details LIKE ? OR a.entity_type LIKE ? "
+                    "OR u.full_name LIKE ? LIMIT 50",
+                    (like, like, like, like)
+                ).fetchall()
+            else:
+                results['activity'] = db.execute(
+                    "SELECT a.id, a.action, a.entity_type, a.entity_id, a.details, a.created_at, "
+                    "u.full_name AS user_name FROM activity_log a "
+                    "LEFT JOIN users u ON a.user_id = u.id ORDER BY a.created_at DESC LIMIT 50"
+                ).fetchall()
+
     currency = get_setting('currency', 'INR')
-    return render_template('admin_search.html', q=q, results=results, currency=currency, format_money=format_money)
+    total = sum(len(v) for v in results.values())
+    return render_template(
+        'admin_search.html', q=q, stype=stype, results=results, total=total,
+        counts=counts, currency=currency, format_money=format_money
+    )
 
 
 @admin.route('/admin/leads')
