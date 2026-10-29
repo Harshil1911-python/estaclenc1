@@ -256,7 +256,7 @@ def admin_users():
         sql += f' AND ({online_sql})'
     elif status_filter == 'offline':
         sql += f' AND NOT ({online_sql})'
-    sql += ' ORDER BY created_at DESC'
+    sql += ' ORDER BY created_at ASC'
     users = db.execute(sql, params).fetchall()
     total = db.execute('SELECT COUNT(*) FROM users').fetchone()[0]
     active_count = db.execute('SELECT COUNT(*) FROM users WHERE is_active = 1').fetchone()[0]
@@ -320,6 +320,32 @@ def presence_offline():
     return ('', 204)
 
 
+USER_IMPORT_FORMAT = """
+============================================================
+ ESTACLE USER IMPORT FORMAT (CSV / Excel)
+============================================================
+ Required columns (header row must match exactly):
+
+   full_name,email,role,phone,password
+
+ Rules:
+   - role must be one of: admin | agent | customer
+   - password min 6 characters
+   - email must be unique
+   - phone is optional (can be empty)
+
+ Example CSV:
+------------------------------------------------------------
+full_name,email,role,phone,password
+John Agent,john.agent@estacle.com,agent,+1-555-0101,agent123
+Sarah Customer,sarah@estacle.com,customer,+1-555-0102,customer123
+Admin Two,admin2@estacle.com,admin,,admin12345
+------------------------------------------------------------
+ Excel: same headers in row 1, data from row 2. Sheet 1 only.
+============================================================
+"""
+
+
 @admin.route('/admin/users/add', methods=['GET', 'POST'])
 @login_required
 @role_required('admin')
@@ -330,27 +356,198 @@ def admin_add_user():
         password = request.form.get('password', '')
         role = request.form.get('role', 'agent')
         phone = request.form.get('phone', '').strip()
+        alt_phone = request.form.get('alt_phone', '').strip()
+        job_title = request.form.get('job_title', '').strip()
+        department = request.form.get('department', '').strip()
+        employee_id = request.form.get('employee_id', '').strip()
+        license_no = request.form.get('license_no', '').strip()
+        commission_raw = request.form.get('commission_rate', '').strip()
+        address = request.form.get('address', '').strip()
+        city = request.form.get('city', '').strip()
+        state = request.form.get('state', '').strip()
+        country = request.form.get('country', '').strip()
+        postal_code = request.form.get('postal_code', '').strip()
+        notes = request.form.get('notes', '').strip()
+        hire_date = request.form.get('hire_date', '').strip()
+        timezone = request.form.get('timezone', '').strip()
+        is_active = 0 if request.form.get('is_active') == '0' else 1
+
+        commission_rate = None
+        if commission_raw:
+            try:
+                commission_rate = float(commission_raw)
+            except ValueError:
+                flash('Commission rate must be a number.', 'danger')
+                return redirect(url_for('admin.admin_add_user'))
 
         if not full_name or not email or not password or role not in ('admin', 'agent', 'customer'):
             flash('Please fill all required fields correctly.', 'danger')
-            return redirect(url_for('admin.admin_users'))
+            return redirect(url_for('admin.admin_add_user'))
+        if len(password) < 6:
+            flash('Password must be at least 6 characters.', 'danger')
+            return redirect(url_for('admin.admin_add_user'))
 
         db = get_db()
+        migrate_db()
         existing = db.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
         if existing:
             flash('Email already exists.', 'danger')
-            return redirect(url_for('admin.admin_users'))
+            return redirect(url_for('admin.admin_add_user'))
 
-        db.execute(
-            'INSERT INTO users (email, password, full_name, role, phone) VALUES (?, ?, ?, ?, ?)',
-            (email, generate_password_hash(password), full_name, role, phone)
+        cur = db.execute(
+            "INSERT INTO users ("
+            "email, password, full_name, role, phone, is_active, "
+            "alt_phone, job_title, department, employee_id, license_no, "
+            "commission_rate, address, city, state, country, postal_code, "
+            "notes, hire_date, timezone"
+            ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                email, generate_password_hash(password), full_name, role, phone, is_active,
+                alt_phone or None, job_title or None, department or None, employee_id or None,
+                license_no or None, commission_rate, address or None, city or None,
+                state or None, country or None, postal_code or None, notes or None,
+                hire_date or None, timezone or None
+            )
         )
         db.commit()
-        log_activity('create_user', 'user', None, f'Created user {full_name} ({role})')
-        flash(f'User {full_name} created successfully.', 'success')
+        new_id = cur.lastrowid
+
+        avatar_file = request.files.get('avatar')
+        if avatar_file and avatar_file.filename:
+            av_dir = os.path.join(current_app.root_path, 'static', 'uploads', 'avatars')
+            os.makedirs(av_dir, exist_ok=True)
+            ext = os.path.splitext(secure_filename(avatar_file.filename))[1].lower()
+            if ext in ('.jpg', '.jpeg', '.png', '.gif', '.webp'):
+                avatar_name = 'user_{}_{}{}'.format(new_id, int(datetime.now().timestamp()), ext)
+                avatar_file.save(os.path.join(av_dir, avatar_name))
+                db.execute('UPDATE users SET avatar = ? WHERE id = ?', (avatar_name, new_id))
+                db.commit()
+
+        log_activity('create_user', 'user', new_id, 'Created user {} ({})'.format(full_name, role))
+        flash('User {} created successfully.'.format(full_name), 'success')
         return redirect(url_for('admin.admin_users'))
 
+    print(USER_IMPORT_FORMAT)
+    return render_template('admin_add_user.html', import_format=USER_IMPORT_FORMAT)
+
+
+@admin.route('/admin/users/import', methods=['POST'])
+@login_required
+@role_required('admin')
+def admin_import_users():
+    print(USER_IMPORT_FORMAT)
+    f = request.files.get('import_file')
+    if not f or not f.filename:
+        flash('Please choose a CSV or Excel file.', 'danger')
+        return redirect(url_for('admin.admin_add_user'))
+
+    filename = secure_filename(f.filename).lower()
+    rows = []
+    try:
+        if filename.endswith('.csv'):
+            raw = f.read().decode('utf-8-sig')
+            reader = csv.DictReader(io.StringIO(raw))
+            rows = list(reader)
+        elif filename.endswith('.xlsx') or filename.endswith('.xls'):
+            try:
+                import openpyxl
+            except ImportError:
+                flash('Excel import requires openpyxl. Run: pip install openpyxl', 'danger')
+                return redirect(url_for('admin.admin_add_user'))
+            wb = openpyxl.load_workbook(f, read_only=True, data_only=True)
+            ws = wb.active
+            data = list(ws.iter_rows(values_only=True))
+            if not data:
+                flash('Excel file is empty.', 'danger')
+                return redirect(url_for('admin.admin_add_user'))
+            headers = [str(h).strip().lower() if h is not None else '' for h in data[0]]
+            for row in data[1:]:
+                if row is None or all(c is None or str(c).strip() == '' for c in row):
+                    continue
+                item = {}
+                for i, h in enumerate(headers):
+                    if i < len(row):
+                        item[h] = '' if row[i] is None else str(row[i]).strip()
+                rows.append(item)
+        else:
+            flash('Unsupported file type. Use .csv or .xlsx', 'danger')
+            return redirect(url_for('admin.admin_add_user'))
+    except Exception as e:
+        flash('Could not read file: {}'.format(str(e)), 'danger')
+        return redirect(url_for('admin.admin_add_user'))
+
+    if not rows:
+        flash('No data rows found in file.', 'warning')
+        return redirect(url_for('admin.admin_add_user'))
+
+    db = get_db()
+    created = 0
+    skipped = 0
+    errors = []
+    required_keys = ('full_name', 'email', 'role', 'password')
+
+    for idx, row in enumerate(rows, start=2):
+        # normalize keys
+        row = { (k or '').strip().lower(): (v or '').strip() if isinstance(v, str) else ('' if v is None else str(v).strip()) for k, v in row.items() }
+        full_name = row.get('full_name', '').strip()
+        email = row.get('email', '').strip().lower()
+        role = row.get('role', '').strip().lower()
+        phone = row.get('phone', '').strip()
+        password = row.get('password', '').strip()
+
+        if not full_name and not email:
+            continue
+        if not full_name or not email or not password or role not in ('admin', 'agent', 'customer'):
+            skipped += 1
+            errors.append('Row {}: missing/invalid fields'.format(idx))
+            continue
+        if len(password) < 6:
+            skipped += 1
+            errors.append('Row {}: password too short'.format(idx))
+            continue
+        existing = db.execute('SELECT id FROM users WHERE email = ?', (email,)).fetchone()
+        if existing:
+            skipped += 1
+            errors.append('Row {}: email already exists ({})'.format(idx, email))
+            continue
+        try:
+            db.execute(
+                'INSERT INTO users (email, password, full_name, role, phone) VALUES (?, ?, ?, ?, ?)',
+                (email, generate_password_hash(password), full_name, role, phone)
+            )
+            created += 1
+        except Exception as e:
+            skipped += 1
+            errors.append('Row {}: {}'.format(idx, str(e)))
+
+    db.commit()
+    if created:
+        log_activity('import_users', 'user', None, 'Imported {} users'.format(created))
+    msg = 'Import finished: {} created, {} skipped.'.format(created, skipped)
+    if errors:
+        msg += ' Issues: ' + '; '.join(errors[:5])
+        if len(errors) > 5:
+            msg += ' (+{} more)'.format(len(errors) - 5)
+    flash(msg, 'success' if created else 'warning')
+    print('[IMPORT] ' + msg)
     return redirect(url_for('admin.admin_users'))
+
+
+@admin.route('/admin/users/import/template.csv')
+@login_required
+@role_required('admin')
+def admin_users_import_template():
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(['full_name', 'email', 'role', 'phone', 'password'])
+    writer.writerow(['John Agent', 'john.agent@estacle.com', 'agent', '+1-555-0101', 'agent123'])
+    writer.writerow(['Sarah Customer', 'sarah@estacle.com', 'customer', '+1-555-0102', 'customer123'])
+    writer.writerow(['Admin Two', 'admin2@estacle.com', 'admin', '', 'admin12345'])
+    resp = make_response(output.getvalue())
+    resp.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    resp.headers['Content-Disposition'] = 'attachment; filename=estacle_users_import_template.csv'
+    return resp
+
 
 
 @admin.route('/admin/users/toggle/<int:user_id>', methods=['POST'])
@@ -370,6 +567,57 @@ def admin_toggle_user(user_id):
     db.execute('UPDATE users SET is_active = ? WHERE id = ?', (new_status, user_id))
     db.commit()
     flash('User status updated.', 'success')
+    return redirect(url_for('admin.admin_user_detail', user_id=user_id))
+
+
+@admin.route('/admin/users/<int:user_id>')
+@login_required
+@role_required('admin')
+def admin_user_detail(user_id):
+    db = get_db()
+    migrate_db()
+    online_sql = (
+        "last_seen IS NOT NULL AND "
+        "datetime(last_seen) >= datetime('now', '-10 minutes')"
+    )
+    user = db.execute(
+        'SELECT *, CASE WHEN ' + online_sql + ' THEN 1 ELSE 0 END AS is_online '
+        'FROM users WHERE id = ?',
+        (user_id,)
+    ).fetchone()
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('admin.admin_users'))
+
+    activity = db.execute(
+        'SELECT action, entity_type, entity_id, details, created_at '
+        'FROM activity_log WHERE user_id = ? ORDER BY created_at DESC LIMIT 20',
+        (user_id,)
+    ).fetchall()
+
+    return render_template(
+        'admin_user_detail.html',
+        user=user,
+        activity=activity,
+    )
+
+
+@admin.route('/admin/users/<int:user_id>/delete', methods=['POST'])
+@login_required
+@role_required('admin')
+def admin_delete_user(user_id):
+    db = get_db()
+    user = db.execute('SELECT id, full_name FROM users WHERE id = ?', (user_id,)).fetchone()
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('admin.admin_users'))
+    if user['id'] == session.get('user_id'):
+        flash('You cannot delete your own account.', 'warning')
+        return redirect(url_for('admin.admin_user_detail', user_id=user_id))
+    db.execute('DELETE FROM users WHERE id = ?', (user_id,))
+    db.commit()
+    log_activity('delete_user', 'user', user_id, 'Deleted user ' + user['full_name'])
+    flash('User ' + user['full_name'] + ' deleted.', 'success')
     return redirect(url_for('admin.admin_users'))
 
 
@@ -378,14 +626,151 @@ def admin_toggle_user(user_id):
 @role_required('admin')
 def admin_properties():
     db = get_db()
-    properties = db.execute('''
-        SELECT p.*, u.full_name as agent_name
-        FROM properties p
-        LEFT JOIN users u ON p.agent_id = u.id
-        ORDER BY p.created_at DESC
-    ''').fetchall()
+    migrate_db()
+    q = request.args.get('q', '').strip()
+    status_filter = request.args.get('status', '').strip()
+    listing_type = request.args.get('listing_type', '').strip()
+    prop_type = request.args.get('property_type', '').strip()
+    city = request.args.get('city', '').strip()
+    agent_id = request.args.get('agent_id', '').strip()
+    beds = request.args.get('beds', '').strip()
+    pmin = request.args.get('pmin', '').strip()
+    pmax = request.args.get('pmax', '').strip()
+    date_from = request.args.get('date_from', '').strip()
+    date_to = request.args.get('date_to', '').strip()
+    view = request.args.get('view', '').strip()
+
+    sql = (
+        'SELECT p.*, u.full_name as agent_name '
+        'FROM properties p LEFT JOIN users u ON p.agent_id = u.id WHERE 1=1'
+    )
+    params = []
+    if q:
+        sql += ' AND (p.title LIKE ? OR p.city LIKE ? OR p.address LIKE ? OR p.description LIKE ?)'
+        params.extend(['%' + q + '%'] * 4)
+    if status_filter in ('available', 'under_offer', 'sold', 'rented'):
+        sql += ' AND p.status = ?'
+        params.append(status_filter)
+    if listing_type in ('sale', 'rent'):
+        sql += ' AND p.listing_type = ?'
+        params.append(listing_type)
+    if prop_type:
+        sql += ' AND p.property_type = ?'
+        params.append(prop_type)
+    if city:
+        sql += ' AND p.city LIKE ?'
+        params.append('%' + city + '%')
+    if agent_id.isdigit():
+        sql += ' AND p.agent_id = ?'
+        params.append(int(agent_id))
+    if beds.isdigit():
+        sql += ' AND p.bedrooms >= ?'
+        params.append(int(beds))
+    if pmin:
+        try:
+            sql += ' AND p.price >= ?'
+            params.append(float(pmin))
+        except ValueError:
+            pass
+    if pmax:
+        try:
+            sql += ' AND p.price <= ?'
+            params.append(float(pmax))
+        except ValueError:
+            pass
+    def _parse_date(val):
+        """Accept YYYY-MM-DD or DD/MM/YYYY."""
+        if not val:
+            return None
+        val = val.strip()
+        if len(val) == 10 and val[4] == '-' and val[7] == '-':
+            return val
+        if len(val) == 10 and val[2] == '/' and val[5] == '/':
+            d, m, y = val.split('/')
+            return '{}-{}-{}'.format(y, m, d)
+        return None
+
+    df = _parse_date(date_from)
+    dt = _parse_date(date_to)
+    if df:
+        sql += ' AND date(p.created_at) >= date(?)'
+        params.append(df)
+    if dt:
+        sql += ' AND date(p.created_at) <= date(?)'
+        params.append(dt)
+    sql += ' ORDER BY p.created_at ASC'
+    properties = db.execute(sql, params).fetchall()
+
+    # Relative "added" labels for table
+    now = datetime.now().date()
+    props_out = []
+    for row in properties:
+        d = dict(row)
+        created = d.get('created_at')
+        label = '—'
+        if created:
+            try:
+                cdt = datetime.strptime(str(created)[:10], '%Y-%m-%d').date()
+                days = (now - cdt).days
+                if days <= 0:
+                    label = 'Today'
+                elif days == 1:
+                    label = '1 day ago'
+                else:
+                    label = '{} days ago'.format(days)
+            except Exception:
+                label = str(created)[:10]
+        d['added_label'] = label
+        props_out.append(d)
+    properties = props_out
+
+    total = db.execute('SELECT COUNT(*) FROM properties').fetchone()[0]
+    stats = {
+        'total': total,
+        'available': db.execute("SELECT COUNT(*) FROM properties WHERE status = 'available'").fetchone()[0],
+        'under_offer': db.execute("SELECT COUNT(*) FROM properties WHERE status = 'under_offer'").fetchone()[0],
+        'sold': db.execute("SELECT COUNT(*) FROM properties WHERE status = 'sold'").fetchone()[0],
+        'rented': db.execute("SELECT COUNT(*) FROM properties WHERE status = 'rented'").fetchone()[0],
+        'sale': db.execute("SELECT COUNT(*) FROM properties WHERE listing_type = 'sale'").fetchone()[0],
+        'rent': db.execute("SELECT COUNT(*) FROM properties WHERE listing_type = 'rent'").fetchone()[0],
+    }
+    agents = db.execute(
+        "SELECT id, full_name FROM users WHERE role = 'agent' AND is_active = 1 ORDER BY full_name"
+    ).fetchall()
+    cities = [
+        r[0] for r in db.execute(
+            "SELECT DISTINCT city FROM properties WHERE city IS NOT NULL AND city != '' ORDER BY city"
+        ).fetchall()
+    ]
+
+    active_filters = 0
+    for v in (q, status_filter, listing_type, prop_type, city, agent_id, beds, pmin, pmax, date_from, date_to):
+        if v:
+            active_filters += 1
+
     currency = get_setting('currency', 'INR')
-    return render_template('admin_properties.html', properties=properties, currency=currency, format_money=format_money)
+    return render_template(
+        'admin_properties.html',
+        properties=properties,
+        stats=stats,
+        agents=agents,
+        cities=cities,
+        q=q,
+        status_filter=status_filter,
+        listing_type=listing_type,
+        prop_type=prop_type,
+        city=city,
+        agent_id=agent_id,
+        beds=beds,
+        pmin=pmin,
+        pmax=pmax,
+        date_from=date_from,
+        date_to=date_to,
+        view=view,
+        active_filters=active_filters,
+        currency=currency,
+        format_money=format_money,
+    )
 
 
 @admin.route('/admin/clients')
@@ -455,18 +840,31 @@ def admin_add_property():
         for f in files:
             if f and f.filename:
                 fname = secure_filename(f.filename)
-                unique = f"{int(__import__('time').time())}_{fname}"
+                unique = '{}_{}'.format(int(__import__('time').time()), fname)
                 f.save(os.path.join(current_app.config['UPLOAD_FOLDER'], unique))
                 photo_names.append(unique)
         photos_str = ','.join(photo_names) if photo_names else None
+
+        video_names = []
+        vfiles = request.files.getlist('videos')
+        for f in vfiles:
+            if f and f.filename:
+                fname = secure_filename(f.filename)
+                ext = os.path.splitext(fname)[1].lower()
+                if ext not in ('.mp4', '.webm', '.mov', '.ogg', '.m4v'):
+                    continue
+                unique = 'vid_{}_{}'.format(int(__import__('time').time()), fname)
+                f.save(os.path.join(current_app.config['UPLOAD_FOLDER'], unique))
+                video_names.append(unique)
+        videos_str = ','.join(video_names) if video_names else None
 
         db.execute(
             """INSERT INTO properties (
                 title, description, price, property_type, status, address, city, state, zip_code,
                 bedrooms, bathrooms, area_sqft, agent_id, category, listing_type, floor, carpet_area,
                 furnishing, parking, amenities, seller_name, seller_phone, monthly_rent, security_deposit,
-                maintenance, per_sqft, latitude, longitude, photos, year_built, facing
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                maintenance, per_sqft, latitude, longitude, photos, year_built, facing, videos
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 title, request.form.get('description', ''), price,
                 request.form.get('property_type', 'house'), request.form.get('status', 'available'),
@@ -478,7 +876,7 @@ def admin_add_property():
                 request.form.get('seller_name', ''), request.form.get('seller_phone', ''),
                 monthly_rent, security_deposit, maintenance, per_sqft,
                 request.form.get('latitude', ''), request.form.get('longitude', ''),
-                photos_str, request.form.get('year_built', ''), request.form.get('facing', '')
+                photos_str, request.form.get('year_built', ''), request.form.get('facing', ''), videos_str
             )
         )
         db.commit()
@@ -486,7 +884,204 @@ def admin_add_property():
         flash(f'Property "{title}" published.', 'success')
         return redirect(url_for('admin.admin_properties'))
 
+    print(PROPERTY_IMPORT_FORMAT)
     return render_template('admin_add_property.html', agents=agents, currency=currency)
+
+
+PROPERTY_IMPORT_FORMAT = """
+============================================================
+ ESTACLE PROPERTY IMPORT FORMAT (CSV / Excel)
+============================================================
+ Header row (exact names):
+
+title,description,price,property_type,status,listing_type,category,address,city,state,zip_code,bedrooms,bathrooms,area_sqft,carpet_area,floor,furnishing,parking,amenities,seller_name,seller_phone,monthly_rent,security_deposit,maintenance,per_sqft,year_built,facing,agent_email
+
+ Rules:
+  - title and price required
+  - property_type: apartment|house|villa|plot|commercial|office|warehouse
+  - status: available|under_offer|sold|rented
+  - listing_type: sale|rent
+  - category: residential|commercial|industrial
+  - agent_email: optional, must match an existing agent account
+  - numeric fields can be empty
+
+ Example row:
+3BHK Sea View,Corner unit with balcony,12500000,apartment,available,sale,residential,Marine Drive,Mumbai,MH,400001,3,2,1450,1200,12,furnished,2 covered,"Pool,Gym",Rajesh,+9198xxxxxx,0,0,5000,8620,2019,East,agent@estacle.com
+============================================================
+"""
+
+
+@admin.route('/admin/properties/import', methods=['POST'])
+@login_required
+@role_required('admin')
+def admin_import_properties():
+    print(PROPERTY_IMPORT_FORMAT)
+    f = request.files.get('import_file')
+    if not f or not f.filename:
+        flash('Please choose a CSV or Excel file.', 'danger')
+        return redirect(url_for('admin.admin_add_property'))
+
+    filename = secure_filename(f.filename).lower()
+    rows = []
+    try:
+        if filename.endswith('.csv'):
+            raw = f.read().decode('utf-8-sig')
+            reader = csv.DictReader(io.StringIO(raw))
+            rows = list(reader)
+        elif filename.endswith('.xlsx') or filename.endswith('.xls'):
+            try:
+                import openpyxl
+            except ImportError:
+                flash('Excel import requires openpyxl. Run: pip install openpyxl', 'danger')
+                return redirect(url_for('admin.admin_add_property'))
+            wb = openpyxl.load_workbook(f, read_only=True, data_only=True)
+            ws = wb.active
+            data = list(ws.iter_rows(values_only=True))
+            if not data:
+                flash('Excel file is empty.', 'danger')
+                return redirect(url_for('admin.admin_add_property'))
+            headers = [str(h).strip().lower() if h is not None else '' for h in data[0]]
+            for row in data[1:]:
+                if row is None or all(c is None or str(c).strip() == '' for c in row):
+                    continue
+                item = {}
+                for i, h in enumerate(headers):
+                    if i < len(row):
+                        item[h] = '' if row[i] is None else str(row[i]).strip()
+                rows.append(item)
+        else:
+            flash('Unsupported file type. Use .csv or .xlsx', 'danger')
+            return redirect(url_for('admin.admin_add_property'))
+    except Exception as e:
+        flash('Could not read file: {}'.format(str(e)), 'danger')
+        return redirect(url_for('admin.admin_add_property'))
+
+    if not rows:
+        flash('No data rows found.', 'warning')
+        return redirect(url_for('admin.admin_add_property'))
+
+    db = get_db()
+    migrate_db()
+    created = 0
+    skipped = 0
+    errors = []
+
+    for idx_row, row in enumerate(rows, start=2):
+        row = {(k or '').strip().lower(): ('' if v is None else str(v).strip()) for k, v in row.items()}
+        title = row.get('title', '').strip()
+        if not title:
+            skipped += 1
+            continue
+        try:
+            price = float(row.get('price') or 0)
+        except ValueError:
+            skipped += 1
+            errors.append('Row {}: invalid price'.format(idx_row))
+            continue
+
+        def num(key, cast=float):
+            raw = row.get(key, '').strip()
+            if not raw:
+                return None
+            try:
+                return cast(raw)
+            except ValueError:
+                return None
+
+        agent_id = None
+        agent_email = row.get('agent_email', '').strip().lower()
+        if agent_email:
+            ag = db.execute(
+                "SELECT id FROM users WHERE email = ? AND role = 'agent'", (agent_email,)
+            ).fetchone()
+            if ag:
+                agent_id = ag['id']
+
+        status = row.get('status', 'available').strip().lower() or 'available'
+        if status not in ('available', 'under_offer', 'sold', 'rented'):
+            status = 'available'
+        listing_type = row.get('listing_type', 'sale').strip().lower() or 'sale'
+        if listing_type not in ('sale', 'rent'):
+            listing_type = 'sale'
+
+        try:
+            db.execute(
+                "INSERT INTO properties ("
+                "title, description, price, property_type, status, address, city, state, zip_code, "
+                "bedrooms, bathrooms, area_sqft, agent_id, category, listing_type, floor, carpet_area, "
+                "furnishing, parking, amenities, seller_name, seller_phone, monthly_rent, security_deposit, "
+                "maintenance, per_sqft, year_built, facing"
+                ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                (
+                    title,
+                    row.get('description', ''),
+                    price,
+                    row.get('property_type', 'house') or 'house',
+                    status,
+                    row.get('address', ''),
+                    row.get('city', ''),
+                    row.get('state', ''),
+                    row.get('zip_code', ''),
+                    num('bedrooms', int),
+                    num('bathrooms', float),
+                    num('area_sqft', float),
+                    agent_id,
+                    row.get('category', 'residential') or 'residential',
+                    listing_type,
+                    row.get('floor') or None,
+                    num('carpet_area', float),
+                    row.get('furnishing') or None,
+                    row.get('parking') or None,
+                    row.get('amenities') or None,
+                    row.get('seller_name') or None,
+                    row.get('seller_phone') or None,
+                    num('monthly_rent', float),
+                    num('security_deposit', float),
+                    num('maintenance', float),
+                    num('per_sqft', float),
+                    row.get('year_built') or None,
+                    row.get('facing') or None,
+                )
+            )
+            created += 1
+        except Exception as e:
+            skipped += 1
+            errors.append('Row {}: {}'.format(idx_row, str(e)))
+
+    db.commit()
+    if created:
+        log_activity('import_properties', 'property', None, 'Imported {} properties'.format(created))
+    msg = 'Import finished: {} created, {} skipped.'.format(created, skipped)
+    if errors:
+        msg += ' Issues: ' + '; '.join(errors[:4])
+    flash(msg, 'success' if created else 'warning')
+    print('[PROPERTY IMPORT] ' + msg)
+    return redirect(url_for('admin.admin_properties'))
+
+
+@admin.route('/admin/properties/import/template.csv')
+@login_required
+@role_required('admin')
+def admin_properties_import_template():
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        'title', 'description', 'price', 'property_type', 'status', 'listing_type', 'category',
+        'address', 'city', 'state', 'zip_code', 'bedrooms', 'bathrooms', 'area_sqft', 'carpet_area',
+        'floor', 'furnishing', 'parking', 'amenities', 'seller_name', 'seller_phone',
+        'monthly_rent', 'security_deposit', 'maintenance', 'per_sqft', 'year_built', 'facing', 'agent_email'
+    ])
+    writer.writerow([
+        '3BHK Sea View', 'Corner unit with balcony', '12500000', 'apartment', 'available', 'sale',
+        'residential', 'Marine Drive', 'Mumbai', 'MH', '400001', '3', '2', '1450', '1200',
+        '12', 'furnished', '2 covered', 'Pool; Gym', 'Rajesh', '+919800000000',
+        '', '', '5000', '8620', '2019', 'East', ''
+    ])
+    resp = make_response(output.getvalue())
+    resp.headers['Content-Type'] = 'text/csv; charset=utf-8'
+    resp.headers['Content-Disposition'] = 'attachment; filename=estacle_properties_import_template.csv'
+    return resp
+
 
 
 @admin.route('/admin/clients/add', methods=['GET', 'POST'])
@@ -537,6 +1132,28 @@ def admin_edit_user(user_id):
         role = request.form.get('role', user['role'])
         phone = request.form.get('phone', '').strip()
         password = request.form.get('password', '').strip()
+        alt_phone = request.form.get('alt_phone', '').strip()
+        job_title = request.form.get('job_title', '').strip()
+        department = request.form.get('department', '').strip()
+        employee_id = request.form.get('employee_id', '').strip()
+        license_no = request.form.get('license_no', '').strip()
+        commission_raw = request.form.get('commission_rate', '').strip()
+        address = request.form.get('address', '').strip()
+        city = request.form.get('city', '').strip()
+        state = request.form.get('state', '').strip()
+        country = request.form.get('country', '').strip()
+        postal_code = request.form.get('postal_code', '').strip()
+        notes = request.form.get('notes', '').strip()
+        hire_date = request.form.get('hire_date', '').strip()
+        timezone = request.form.get('timezone', '').strip()
+
+        commission_rate = None
+        if commission_raw:
+            try:
+                commission_rate = float(commission_raw)
+            except ValueError:
+                flash('Commission rate must be a number.', 'danger')
+                return redirect(url_for('admin.admin_edit_user', user_id=user_id))
 
         if not full_name or not email or role not in ('admin', 'agent', 'customer'):
             flash('Please fill all required fields correctly.', 'danger')
@@ -554,28 +1171,51 @@ def admin_edit_user(user_id):
             os.makedirs(av_dir, exist_ok=True)
             ext = os.path.splitext(secure_filename(avatar_file.filename))[1].lower()
             if ext in ('.jpg', '.jpeg', '.png', '.gif', '.webp'):
-                avatar_name = f'user_{user_id}_{int(datetime.now().timestamp())}{ext}'
+                avatar_name = 'user_{}_{}{}'.format(user_id, int(datetime.now().timestamp()), ext)
                 avatar_file.save(os.path.join(av_dir, avatar_name))
 
+        fields = (
+            full_name, email, role, phone, avatar_name,
+            alt_phone or None, job_title or None, department or None, employee_id or None,
+            license_no or None, commission_rate, address or None, city or None,
+            state or None, country or None, postal_code or None, notes or None,
+            hire_date or None, timezone or None, user_id
+        )
         if password:
+            if len(password) < 6:
+                flash('Password must be at least 6 characters.', 'danger')
+                return redirect(url_for('admin.admin_edit_user', user_id=user_id))
             db.execute(
-                'UPDATE users SET full_name=?, email=?, role=?, phone=?, password=?, avatar=? WHERE id=?',
-                (full_name, email, role, phone, generate_password_hash(password), avatar_name, user_id)
+                "UPDATE users SET full_name=?, email=?, role=?, phone=?, avatar=?, "
+                "alt_phone=?, job_title=?, department=?, employee_id=?, license_no=?, "
+                "commission_rate=?, address=?, city=?, state=?, country=?, postal_code=?, "
+                "notes=?, hire_date=?, timezone=?, password=? WHERE id=?",
+                (
+                    full_name, email, role, phone, avatar_name,
+                    alt_phone or None, job_title or None, department or None, employee_id or None,
+                    license_no or None, commission_rate, address or None, city or None,
+                    state or None, country or None, postal_code or None, notes or None,
+                    hire_date or None, timezone or None, generate_password_hash(password), user_id
+                )
             )
         else:
             db.execute(
-                'UPDATE users SET full_name=?, email=?, role=?, phone=?, avatar=? WHERE id=?',
-                (full_name, email, role, phone, avatar_name, user_id)
+                "UPDATE users SET full_name=?, email=?, role=?, phone=?, avatar=?, "
+                "alt_phone=?, job_title=?, department=?, employee_id=?, license_no=?, "
+                "commission_rate=?, address=?, city=?, state=?, country=?, postal_code=?, "
+                "notes=?, hire_date=?, timezone=? WHERE id=?",
+                fields
             )
         db.commit()
         if user_id == session.get('user_id'):
             session['full_name'] = full_name
             session['email'] = email
             session['role'] = role
+        log_activity('update_user', 'user', user_id, 'Updated user {}'.format(full_name))
         flash('User updated successfully.', 'success')
         if request.form.get('next') == 'dashboard':
             return redirect(url_for('admin.admin_dashboard'))
-        return redirect(url_for('admin.admin_users'))
+        return redirect(url_for('admin.admin_user_detail', user_id=user_id))
 
     return render_template('admin_edit_user.html', user=user)
 
@@ -1026,8 +1666,17 @@ def admin_property_detail(prop_id):
     photos = []
     if prop['photos']:
         photos = [p.strip() for p in prop['photos'].split(',') if p.strip()]
+    videos = []
+    try:
+        if prop['videos']:
+            videos = [v.strip() for v in prop['videos'].split(',') if v.strip()]
+    except (KeyError, IndexError, TypeError):
+        videos = []
     currency = get_setting('currency', 'INR')
-    return render_template('admin_property_detail.html', prop=prop, photos=photos, currency=currency, format_money=format_money)
+    return render_template(
+        'admin_property_detail.html', prop=prop, photos=photos, videos=videos,
+        currency=currency, format_money=format_money
+    )
 
 
 @admin.route('/admin/properties/edit/<int:prop_id>', methods=['GET', 'POST'])
@@ -1035,36 +1684,107 @@ def admin_property_detail(prop_id):
 @role_required('admin')
 def admin_edit_property(prop_id):
     db = get_db()
+    migrate_db()
     prop = db.execute('SELECT * FROM properties WHERE id = ?', (prop_id,)).fetchone()
     if not prop:
         flash('Property not found.', 'danger')
         return redirect(url_for('admin.admin_properties'))
-    agents = db.execute("SELECT id, full_name FROM users WHERE role = 'agent' AND is_active = 1 ORDER BY full_name").fetchall()
+    agents = db.execute(
+        "SELECT id, full_name FROM users WHERE role = 'agent' AND is_active = 1 ORDER BY full_name"
+    ).fetchall()
+    currency = get_setting('currency', 'INR')
+
     if request.method == 'POST':
         title = request.form.get('title', '').strip()
         if not title:
-            flash('Title required.', 'danger')
+            flash('Title is required.', 'danger')
             return redirect(url_for('admin.admin_edit_property', prop_id=prop_id))
         try:
             price = float(request.form.get('price') or 0)
             bedrooms = int(request.form.get('bedrooms') or 0) or None
             bathrooms = float(request.form.get('bathrooms') or 0) or None
             area_sqft = float(request.form.get('area_sqft') or 0) or None
+            carpet_area = float(request.form.get('carpet_area') or 0) or None
+            monthly_rent = float(request.form.get('monthly_rent') or 0) or None
+            security_deposit = float(request.form.get('security_deposit') or 0) or None
+            maintenance = float(request.form.get('maintenance') or 0) or None
+            per_sqft = float(request.form.get('per_sqft') or 0) or None
             agent_id = int(request.form.get('agent_id') or 0) or None
         except ValueError:
-            flash('Invalid numbers.', 'danger')
+            flash('Invalid numeric values.', 'danger')
             return redirect(url_for('admin.admin_edit_property', prop_id=prop_id))
+
+        photos_str = prop['photos'] if 'photos' in prop.keys() else None
+        files = request.files.getlist('photos')
+        photo_names = [p.strip() for p in (photos_str or '').split(',') if p.strip()]
+        for f in files:
+            if f and f.filename:
+                fname = secure_filename(f.filename)
+                unique = '{}_{}'.format(int(__import__('time').time()), fname)
+                f.save(os.path.join(current_app.config['UPLOAD_FOLDER'], unique))
+                photo_names.append(unique)
+        if photo_names:
+            photos_str = ','.join(photo_names)
+
+        videos_str = prop['videos'] if 'videos' in prop.keys() else None
+        vfiles = request.files.getlist('videos')
+        video_names = [v.strip() for v in (videos_str or '').split(',') if v.strip()]
+        for f in vfiles:
+            if f and f.filename:
+                fname = secure_filename(f.filename)
+                ext = os.path.splitext(fname)[1].lower()
+                if ext not in ('.mp4', '.webm', '.mov', '.ogg', '.m4v'):
+                    continue
+                unique = 'vid_{}_{}'.format(int(__import__('time').time()), fname)
+                f.save(os.path.join(current_app.config['UPLOAD_FOLDER'], unique))
+                video_names.append(unique)
+        if video_names:
+            videos_str = ','.join(video_names)
+
         db.execute(
-            "UPDATE properties SET title=?, description=?, price=?, property_type=?, status=?, address=?, city=?, state=?, zip_code=?, bedrooms=?, bathrooms=?, area_sqft=?, agent_id=? WHERE id=?",
-            (title, request.form.get('description',''), price, request.form.get('property_type','house'),
-             request.form.get('status','available'), request.form.get('address',''), request.form.get('city',''),
-             request.form.get('state',''), request.form.get('zip_code',''), bedrooms, bathrooms, area_sqft, agent_id, prop_id)
+            "UPDATE properties SET title=?, description=?, price=?, property_type=?, status=?, "
+            "address=?, city=?, state=?, zip_code=?, bedrooms=?, bathrooms=?, area_sqft=?, agent_id=?, "
+            "category=?, listing_type=?, floor=?, carpet_area=?, furnishing=?, parking=?, amenities=?, "
+            "seller_name=?, seller_phone=?, monthly_rent=?, security_deposit=?, maintenance=?, per_sqft=?, "
+            "latitude=?, longitude=?, photos=?, year_built=?, facing=?, videos=? WHERE id=?",
+            (
+                title,
+                request.form.get('description', ''),
+                price,
+                request.form.get('property_type', 'house'),
+                request.form.get('status', 'available'),
+                request.form.get('address', ''),
+                request.form.get('city', ''),
+                request.form.get('state', ''),
+                request.form.get('zip_code', ''),
+                bedrooms, bathrooms, area_sqft, agent_id,
+                request.form.get('category', 'sale'),
+                request.form.get('listing_type', 'sale'),
+                request.form.get('floor', '') or None,
+                carpet_area,
+                request.form.get('furnishing', '') or None,
+                request.form.get('parking', '') or None,
+                request.form.get('amenities', '') or None,
+                request.form.get('seller_name', '') or None,
+                request.form.get('seller_phone', '') or None,
+                monthly_rent, security_deposit, maintenance, per_sqft,
+                request.form.get('latitude', '') or None,
+                request.form.get('longitude', '') or None,
+                photos_str,
+                request.form.get('year_built', '') or None,
+                request.form.get('facing', '') or None,
+                videos_str,
+                prop_id,
+            )
         )
         db.commit()
         log_activity('Updated property', 'property', prop_id, title)
         flash('Property updated.', 'success')
         return redirect(url_for('admin.admin_property_detail', prop_id=prop_id))
-    return render_template('admin_edit_property.html', prop=prop, agents=agents)
+
+    return render_template(
+        'admin_edit_property.html', prop=prop, agents=agents, currency=currency, format_money=format_money
+    )
 
 
 @admin.route('/admin/tasks')

@@ -6,57 +6,285 @@
     <title>Estacle | Admin – Edit User</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        html, body { height: 100%; }
+        .main-content { display: flex; flex-direction: column; min-height: 100vh; padding-bottom: 0 !important; }
+        .top-bar.dash-top {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 24px !important; background: #fff; border-bottom: 1px solid #e8ecf1;
+            box-shadow: none; gap: 12px; flex-wrap: wrap; flex-shrink: 0;
+        }
+        .dash-top .page-title { font-size: 17px; font-weight: 700; color: #0f172a; margin: 0; letter-spacing: -0.02em; }
+        .dash-top .page-subtitle { font-size: 12.5px; color: #64748b; margin: 2px 0 0; }
+        .top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn-back {
+            display: inline-flex; align-items: center; height: 34px; padding: 0 12px;
+            background: #fff; color: #475569; border: 1px solid #e8ecf1; border-radius: 8px;
+            font-size: 12.5px; font-weight: 600; text-decoration: none;
+        }
+        .btn-back:hover { background: #f8fafc; color: #0f172a; }
+        .page-wrap { flex: 1; padding: 14px 24px 18px; display: flex; flex-direction: column; gap: 10px; width: 100%; box-sizing: border-box; }
+        .profile-strip {
+            display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+            background: #fff; border: 1px solid #e8ecf1; border-radius: 12px;
+        }
+        .avatar-preview {
+            width: 48px; height: 48px; border-radius: 50%; background: #f1f5f9; border: 2px solid #e8ecf1;
+            display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700;
+            color: #64748b; overflow: hidden; flex-shrink: 0;
+        }
+        .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-strip .meta h2 { margin: 0 0 1px; font-size: 14px; font-weight: 700; color: #0f172a; }
+        .profile-strip .meta p { margin: 0; font-size: 12px; color: #64748b; }
+        .chips { display: flex; gap: 6px; margin-top: 5px; flex-wrap: wrap; }
+        .chip { display: inline-flex; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; background: #f1f5f9; color: #334155; }
+        .chip.role-admin { background: #eef2ff; color: #4338ca; }
+        .chip.role-agent { background: #ecfdf5; color: #047857; }
+        .chip.role-customer { background: #fff7ed; color: #c2410c; }
+        .panel {
+            background: #fff; border: 1px solid #e8ecf1; border-radius: 12px;
+            box-shadow: 0 1px 2px rgba(15,23,42,0.04); overflow: hidden;
+            display: flex; flex-direction: column; flex: 1;
+        }
+        .panel-hd {
+            padding: 9px 14px; border-bottom: 1px solid #f1f5f9; background: #fafbfc;
+            font-size: 12.5px; font-weight: 600; color: #0f172a;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .panel-hd span { font-weight: 500; color: #94a3b8; font-size: 11.5px; }
+        .panel-bd { padding: 12px 14px; flex: 1; }
+        .panel-ft {
+            padding: 9px 14px; border-top: 1px solid #f1f5f9; background: #fafbfc;
+            display: flex; gap: 8px; justify-content: flex-end;
+        }
+        .sec {
+            font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;
+            letter-spacing: 0.04em; margin: 12px 0 8px; padding-bottom: 5px; border-bottom: 1px solid #f1f5f9;
+        }
+        .sec:first-child { margin-top: 0; }
+        .g { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 10px; }
+        .g .s2 { grid-column: span 2; }
+        .g .s3 { grid-column: 1 / -1; }
+        @media (max-width: 800px) { .g { grid-template-columns: 1fr 1fr; } .g .s2 { grid-column: span 1; } }
+        @media (max-width: 480px) { .g { grid-template-columns: 1fr; } }
+        .fg { display: flex; flex-direction: column; gap: 3px; }
+        .fg label { font-size: 11.5px; font-weight: 600; color: #475569; }
+        .fg label .r { color: #dc2626; }
+        .fg input, .fg select, .fg textarea {
+            height: 36px; padding: 0 9px; border: 1px solid #e2e8f0; border-radius: 7px;
+            font-size: 13px; font-family: inherit; color: #0f172a; outline: none;
+            box-sizing: border-box; width: 100%; background: #fff;
+        }
+        .fg textarea { height: 64px; padding: 8px 9px; resize: vertical; }
+        .fg input[type="file"] { height: auto; padding: 5px 8px; font-size: 12px; }
+        .fg input:focus, .fg select:focus, .fg textarea:focus {
+            border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+        }
+        .hint { font-size: 11px; color: #94a3b8; margin: 0; }
+        .avatar-field { display: flex; align-items: center; gap: 10px; }
+        .avatar-field .avatar-preview { width: 40px; height: 40px; font-size: 14px; }
+        .btn-cancel {
+            height: 34px; padding: 0 12px; background: #fff; border: 1px solid #e2e8f0;
+            border-radius: 7px; font-size: 12.5px; font-weight: 600; color: #64748b;
+            cursor: pointer; font-family: inherit; text-decoration: none; display: inline-flex; align-items: center;
+        }
+        .btn-cancel:hover { background: #f8fafc; color: #0f172a; }
+        .btn-save {
+            height: 34px; padding: 0 14px; background: #1e1b4b; border: none;
+            border-radius: 7px; font-size: 12.5px; font-weight: 600; color: #fff;
+            cursor: pointer; font-family: inherit;
+        }
+        .btn-save:hover { background: #312e81; }
+        .toast-host { position: fixed; left: 0; right: 0; bottom: 22px; z-index: 9999; display: flex; justify-content: center; pointer-events: none; }
+        .toast-sphere {
+            pointer-events: auto; background: #0f172a; color: #fff; padding: 11px 20px; border-radius: 999px;
+            font-size: 13px; font-weight: 500; box-shadow: 0 12px 40px rgba(15,23,42,0.35);
+            opacity: 0; transform: translateY(16px); transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        .toast-sphere.show { opacity: 1; transform: translateY(0); }
+        .toast-sphere.hide { opacity: 0; }
+    </style>
 </head>
 <body>
 <div class="app-layout">
     {% set active = 'users' %}
     {% include 'partials/admin_sidebar.html' %}
     <main class="main-content">
-        <header class="top-bar">
+        <header class="top-bar dash-top">
             <div>
                 <h1 class="page-title">Edit User</h1>
-                <p class="page-subtitle">Update account details for {{ user.full_name }}</p>
+                <p class="page-subtitle">{{ user.full_name }} · #{{ user.id }}</p>
             </div>
-            <a href="{{ url_for('admin.admin_users') }}" class="btn-secondary">Back to Users</a>
+            <div class="top-actions">
+                <a href="{{ url_for('admin.admin_user_detail', user_id=user.id) }}" class="btn-back">Details</a>
+                <a href="{{ url_for('admin.admin_users') }}" class="btn-back">← Users</a>
+            </div>
         </header>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
-        {% endwith %}
-        <div class="panel form-panel">
-            <form method="POST" class="admin-form" enctype="multipart/form-data">
-                {% if request.args.get('next') %}<input type="hidden" name="next" value="{{ request.args.get('next') }}">{% endif %}
-                <div class="form-group">
-                    <label>Profile photo</label>
-                    <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px;">
-                        {% if user.avatar %}
-                        <img src="{{ url_for('static', filename='uploads/avatars/' + user.avatar) }}" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:1px solid #e2e8f0;">
-                        {% else %}
-                        <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(145deg,#4f46e5,#6366f1);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;">{{ user.full_name[0]|upper }}</div>
-                        {% endif %}
-                        <input type="file" name="avatar" accept="image/png,image/jpeg,image/gif,image/webp">
+        <div class="page-wrap">
+            <div id="flash-data" style="display:none">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}{% for category, message in messages %}<span data-msg="{{ message|e }}"></span>{% endfor %}{% endif %}
+            {% endwith %}
+            </div>
+
+            <div class="profile-strip">
+                <div class="avatar-preview">
+                    {% if user.avatar %}
+                    <img src="{{ url_for('static', filename='uploads/avatars/' + user.avatar) }}" alt="">
+                    {% else %}{{ (user.full_name or '?')[0]|upper }}{% endif %}
+                </div>
+                <div class="meta">
+                    <h2>{{ user.full_name }}</h2>
+                    <p>{{ user.email }}{% if user.job_title %} · {{ user.job_title }}{% endif %}{% if user.department %} · {{ user.department }}{% endif %}</p>
+                    <div class="chips">
+                        <span class="chip role-{{ user.role }}">{{ user.role|capitalize }}</span>
+                        <span class="chip">{{ 'Active' if user.is_active else 'Inactive' }}</span>
+                        {% if user.employee_id %}<span class="chip">{{ user.employee_id }}</span>{% endif %}
                     </div>
-                    <p class="form-hint" style="font-size:12px;color:#94a3b8;">JPG, PNG, GIF or WebP</p>
                 </div>
-                <div class="form-row">
-                    <div class="form-group"><label>Full Name *</label><input type="text" name="full_name" value="{{ user.full_name }}" required></div>
-                    <div class="form-group"><label>Email *</label><input type="email" name="email" value="{{ user.email }}" required></div>
+            </div>
+
+            <form method="POST" enctype="multipart/form-data" class="panel">
+                {% if request.args.get('next') %}<input type="hidden" name="next" value="{{ request.args.get('next') }}">{% endif %}
+                <div class="panel-hd">Profile & access <span>* required</span></div>
+                <div class="panel-bd">
+                    <p class="sec">Personal</p>
+                    <div class="g">
+                        <div class="fg s2">
+                            <label for="full_name">Full name <span class="r">*</span></label>
+                            <input type="text" id="full_name" name="full_name" value="{{ user.full_name }}" required>
+                        </div>
+                        <div class="fg">
+                            <label for="employee_id">Employee / ref ID</label>
+                            <input type="text" id="employee_id" name="employee_id" value="{{ user.employee_id or '' }}" placeholder="e.g. EMP-1042">
+                        </div>
+                        <div class="fg s2">
+                            <label for="email">Work email <span class="r">*</span></label>
+                            <input type="email" id="email" name="email" value="{{ user.email }}" required>
+                        </div>
+                        <div class="fg">
+                            <label for="hire_date">Start date</label>
+                            <input type="date" id="hire_date" name="hire_date" value="{{ user.hire_date or '' }}">
+                        </div>
+                        <div class="fg">
+                            <label for="phone">Primary phone</label>
+                            <input type="text" id="phone" name="phone" value="{{ user.phone or '' }}">
+                        </div>
+                        <div class="fg">
+                            <label for="alt_phone">Alternate phone</label>
+                            <input type="text" id="alt_phone" name="alt_phone" value="{{ user.alt_phone or '' }}">
+                        </div>
+                        <div class="fg">
+                            <label for="timezone">Timezone</label>
+                            <select id="timezone" name="timezone">
+                                <option value="">— Select —</option>
+                                {% set tz = user.timezone or '' %}
+                                <option value="Asia/Kolkata" {% if tz == 'Asia/Kolkata' %}selected{% endif %}>Asia/Kolkata (IST)</option>
+                                <option value="Asia/Dubai" {% if tz == 'Asia/Dubai' %}selected{% endif %}>Asia/Dubai (GST)</option>
+                                <option value="America/New_York" {% if tz == 'America/New_York' %}selected{% endif %}>America/New_York (ET)</option>
+                                <option value="Europe/London" {% if tz == 'Europe/London' %}selected{% endif %}>Europe/London (GMT)</option>
+                                <option value="Asia/Singapore" {% if tz == 'Asia/Singapore' %}selected{% endif %}>Asia/Singapore</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <p class="sec">Role & employment</p>
+                    <div class="g">
+                        <div class="fg">
+                            <label for="role">System role <span class="r">*</span></label>
+                            <select id="role" name="role" required>
+                                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                                <option value="agent" {% if user.role == 'agent' %}selected{% endif %}>Agent</option>
+                                <option value="customer" {% if user.role == 'customer' %}selected{% endif %}>Customer</option>
+                            </select>
+                        </div>
+                        <div class="fg">
+                            <label for="job_title">Job title</label>
+                            <input type="text" id="job_title" name="job_title" value="{{ user.job_title or '' }}" placeholder="Senior Sales Associate">
+                        </div>
+                        <div class="fg">
+                            <label for="department">Department / team</label>
+                            <input type="text" id="department" name="department" value="{{ user.department or '' }}">
+                        </div>
+                        <div class="fg">
+                            <label for="license_no">License / RERA no.</label>
+                            <input type="text" id="license_no" name="license_no" value="{{ user.license_no or '' }}">
+                        </div>
+                        <div class="fg">
+                            <label for="commission_rate">Default commission %</label>
+                            <input type="number" id="commission_rate" name="commission_rate" step="0.01" min="0" max="100" value="{{ user.commission_rate if user.commission_rate is not none else '' }}" placeholder="e.g. 2.5">
+                        </div>
+                        <div class="fg">
+                            <label for="password">New password</label>
+                            <input type="password" id="password" name="password" placeholder="Leave blank to keep" minlength="6" autocomplete="new-password">
+                            <p class="hint">Min. 6 characters if changing</p>
+                        </div>
+                    </div>
+
+                    <p class="sec">Address</p>
+                    <div class="g">
+                        <div class="fg s3">
+                            <label for="address">Street address</label>
+                            <input type="text" id="address" name="address" value="{{ user.address or '' }}">
+                        </div>
+                        <div class="fg">
+                            <label for="city">City</label>
+                            <input type="text" id="city" name="city" value="{{ user.city or '' }}">
+                        </div>
+                        <div class="fg">
+                            <label for="state">State / region</label>
+                            <input type="text" id="state" name="state" value="{{ user.state or '' }}">
+                        </div>
+                        <div class="fg">
+                            <label for="postal_code">Postal code</label>
+                            <input type="text" id="postal_code" name="postal_code" value="{{ user.postal_code or '' }}">
+                        </div>
+                        <div class="fg s2">
+                            <label for="country">Country</label>
+                            <input type="text" id="country" name="country" value="{{ user.country or '' }}">
+                        </div>
+                    </div>
+
+                    <p class="sec">Photo & notes</p>
+                    <div class="g">
+                        <div class="fg s2">
+                            <label for="avatar">Profile photo</label>
+                            <div class="avatar-field">
+                                <div class="avatar-preview">
+                                    {% if user.avatar %}
+                                    <img src="{{ url_for('static', filename='uploads/avatars/' + user.avatar) }}" alt="">
+                                    {% else %}{{ (user.full_name or '?')[0]|upper }}{% endif %}
+                                </div>
+                                <input type="file" id="avatar" name="avatar" accept="image/png,image/jpeg,image/gif,image/webp">
+                            </div>
+                        </div>
+                        <div class="fg s3">
+                            <label for="notes">Internal notes</label>
+                            <textarea id="notes" name="notes" placeholder="Onboarding notes, reporting line, desk…">{{ user.notes or '' }}</textarea>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group"><label>New Password</label><input type="password" name="password" placeholder="Leave blank to keep current" minlength="6"></div>
-                    <div class="form-group"><label>Phone</label><input type="text" name="phone" value="{{ user.phone or '' }}"></div>
+                <div class="panel-ft">
+                    <a href="{{ url_for('admin.admin_users') }}" class="btn-cancel">Cancel</a>
+                    <button type="submit" class="btn-save">Save changes</button>
                 </div>
-                <div class="form-group">
-                    <label>Role *</label>
-                    <select name="role" required>
-                        <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
-                        <option value="agent" {% if user.role == 'agent' %}selected{% endif %}>Agent</option>
-                        <option value="customer" {% if user.role == 'customer' %}selected{% endif %}>Customer</option>
-                    </select>
-                </div>
-                <button type="submit" class="btn-primary">Save Changes</button>
             </form>
         </div>
     </main>
 </div>
+<div class="toast-host" id="toastHost" aria-live="polite"></div>
+<script>
+(function() {
+    var host = document.getElementById('toastHost'), data = document.getElementById('flash-data');
+    if (!host || !data) return;
+    var items = data.querySelectorAll('span[data-msg]');
+    if (!items.length) return;
+    var el = document.createElement('div'); el.className = 'toast-sphere';
+    el.textContent = items[0].getAttribute('data-msg') || 'Done';
+    host.appendChild(el);
+    requestAnimationFrame(function() { el.classList.add('show'); });
+    setTimeout(function() { el.classList.add('hide'); setTimeout(function() { el.remove(); }, 250); }, 2800);
+})();
+</script>
 </body>
 </html>

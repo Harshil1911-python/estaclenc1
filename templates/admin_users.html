@@ -138,28 +138,262 @@
         }
         .btn-back-table:hover { text-decoration: underline; }
 
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.4); z-index: 1000; align-items: center; justify-content: center; padding: 24px; }
-        .modal-overlay.open { display: flex; }
-        .modal { background: #fff; border-radius: 18px; width: 100%; max-width: 520px; box-shadow: 0 20px 50px rgba(15,23,42,0.18); max-height: 90vh; overflow-y: auto; }
-        .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 0; }
-        .modal-header h2 { margin: 0; font-size: 18px; font-weight: 700; color: #0f172a; }
-        .modal-close { width: 36px; height: 36px; border: none; background: #f1f5f9; border-radius: 10px; cursor: pointer; color: #64748b; display: flex; align-items: center; justify-content: center; }
-        .modal-body { padding: 20px 24px 24px; }
-        .modal-body .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
-        .modal-body .form-group { display: flex; flex-direction: column; gap: 6px; }
-        .modal-body .form-group.full { grid-column: 1 / -1; }
-        .modal-body label { font-size: 12.5px; font-weight: 600; color: #64748b; }
-        .modal-body input, .modal-body select { height: 42px; padding: 0 12px; border: 1px solid #e8ecf1; border-radius: 10px; font-size: 14px; font-family: inherit; color: #0f172a; outline: none; box-sizing: border-box; width: 100%; }
-        .modal-body input:focus, .modal-body select:focus { border-color: #c7d2fe; box-shadow: 0 0 0 3px rgba(79,70,229,0.12); }
-        .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px; padding-top: 8px; }
-        .modal-actions .btn-cancel { height: 42px; padding: 0 16px; background: #fff; border: 1px solid #e8ecf1; border-radius: 10px; font-size: 13.5px; font-weight: 600; color: #64748b; cursor: pointer; font-family: inherit; }
-        .modal-actions .btn-submit { height: 42px; padding: 0 20px; background: #1e1b4b; border: none; border-radius: 10px; font-size: 13.5px; font-weight: 600; color: #fff; cursor: pointer; font-family: inherit; }
-        .toast-wrap { position: fixed; top: 20px; right: 20px; z-index: 1100; display: flex; flex-direction: column; gap: 8px; }
-        .toast { padding: 12px 16px; border-radius: 10px; font-size: 13.5px; font-weight: 500; box-shadow: 0 4px 16px rgba(15,23,42,0.12); background: #fff; border: 1px solid #e8ecf1; color: #0f172a; max-width: 320px; }
-        .toast.success { border-left: 3px solid #22c55e; }
-        .toast.danger { border-left: 3px solid #ef4444; }
-        .toast.warning { border-left: 3px solid #f59e0b; }
-        .toast.info { border-left: 3px solid #3b82f6; }
+        /* Right-side drawer for Add User */
+        .drawer-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,0.35);
+            z-index: 1000;
+        }
+        .drawer-overlay.open { display: block; }
+        .drawer-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 268px; /* align with main content (sidebar width) */
+            width: auto;
+            max-width: none;
+            background: #fff;
+            z-index: 1001;
+            box-shadow: none;
+            transform: translateX(100%);
+            transition: transform 0.28s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        @media (max-width: 900px) {
+            .drawer-panel { left: 68px; }
+        }
+        .drawer-panel.open { transform: translateX(0); }
+        .drawer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 22px 24px;
+            border-bottom: 1px solid #f1f5f9;
+            flex-shrink: 0;
+        }
+        .drawer-header h2 { margin: 0; font-size: 18px; font-weight: 700; color: #0f172a; letter-spacing: -0.02em; }
+        .drawer-close {
+            width: 36px; height: 36px; border: none; background: #f1f5f9; border-radius: 10px;
+            cursor: pointer; color: #64748b; display: flex; align-items: center; justify-content: center;
+        }
+        .drawer-close:hover { background: #e2e8f0; color: #0f172a; }
+        .drawer-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+        }
+        .drawer-body .form-group {
+            display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px;
+        }
+        .drawer-body label { font-size: 12.5px; font-weight: 600; color: #64748b; }
+        .drawer-body input, .drawer-body select {
+            height: 44px; padding: 0 14px; border: 1px solid #e8ecf1; border-radius: 10px;
+            font-size: 14px; font-family: inherit; color: #0f172a; outline: none; box-sizing: border-box; width: 100%;
+            background: #fff;
+        }
+        .drawer-body input:focus, .drawer-body select:focus {
+            border-color: #c7d2fe; box-shadow: 0 0 0 3px rgba(79,70,229,0.12);
+        }
+        .drawer-footer {
+            padding: 16px 24px 24px;
+            border-top: 1px solid #f1f5f9;
+            display: flex; gap: 10px; justify-content: flex-end;
+            flex-shrink: 0;
+        }
+        .drawer-footer .btn-cancel {
+            height: 42px; padding: 0 18px; background: #fff; border: 1px solid #e8ecf1;
+            border-radius: 10px; font-size: 13.5px; font-weight: 600; color: #64748b;
+            cursor: pointer; font-family: inherit;
+        }
+        .drawer-footer .btn-cancel:hover { background: #f8fafc; }
+        .drawer-footer .btn-submit {
+            height: 42px; padding: 0 22px; background: #1e1b4b; border: none;
+            border-radius: 10px; font-size: 13.5px; font-weight: 600; color: #fff;
+            cursor: pointer; font-family: inherit;
+        }
+        .drawer-footer .btn-submit:hover { background: #312e81; }
+
+        /* Details modal */
+        .details-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15,23,42,0.4);
+            z-index: 1100;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .details-overlay.open { display: flex; }
+        .details-modal {
+            background: #fff;
+            border-radius: 18px;
+            width: 100%;
+            max-width: 440px;
+            box-shadow: 0 20px 50px rgba(15,23,42,0.18);
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: detailsIn 0.22s ease;
+        }
+        @keyframes detailsIn {
+            from { opacity: 0; transform: translateY(12px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .details-header {
+            display: flex; align-items: flex-start; justify-content: space-between;
+            padding: 24px 24px 0;
+        }
+        .details-header h2 { margin: 0; font-size: 18px; font-weight: 700; color: #0f172a; }
+        .details-close {
+            width: 36px; height: 36px; border: none; background: #f1f5f9; border-radius: 10px;
+            cursor: pointer; color: #64748b; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .details-body { padding: 20px 24px 28px; }
+        .details-avatar {
+            width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 16px;
+            background: #f1f5f9; border: 2px solid #e8ecf1;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px; font-weight: 700; color: #64748b; overflow: hidden;
+        }
+        .details-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .details-name { text-align: center; font-size: 18px; font-weight: 700; color: #0f172a; margin: 0 0 4px; }
+        .details-email { text-align: center; font-size: 13.5px; color: #64748b; margin: 0 0 20px; }
+        .details-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+            background: #f8fafc; border-radius: 12px; padding: 16px;
+            border: 1px solid #f1f5f9;
+        }
+        .details-item label {
+            display: block; font-size: 11px; font-weight: 600; color: #94a3b8;
+            text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px;
+        }
+        .details-item span { font-size: 14px; font-weight: 500; color: #0f172a; }
+        .details-item.full { grid-column: 1 / -1; }
+        .btn-details {
+            display: inline-flex; align-items: center; justify-content: center;
+            margin-top: 12px; width: 100%; height: 36px;
+            background: #1e1b4b; color: #fff; border: none; border-radius: 10px;
+            font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+            text-decoration: none;
+        }
+        .btn-details:hover { background: #312e81; color: #fff; }
+        .btn-towards-panel {
+            display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 16px;
+            background: #fff; color: #1e1b4b; border: 1px solid #e8ecf1; border-radius: 10px;
+            font-size: 13.5px; font-weight: 600; text-decoration: none; font-family: inherit;
+            white-space: nowrap; margin-left: auto;
+        }
+        .btn-towards-panel:hover { background: #f8fafc; border-color: #c7d2fe; color: #4f46e5; }
+        .btn-towards-panel svg { width: 16px; height: 16px; }
+        .panel-toolbar .filter-form { flex: 1; }
+        /* Full panel form layout */
+        .drawer-panel .drawer-body-inner {
+            max-width: 640px; margin: 0 auto; width: 100%;
+        }
+        .drawer-panel .drawer-header {
+            padding: 20px 36px;
+        }
+        .drawer-panel .drawer-body-scroll {
+            flex: 1; overflow-y: auto; padding: 28px 36px;
+        }
+        .drawer-panel .drawer-footer {
+            padding: 16px 36px 28px;
+        }
+        .drawer-panel .form-row-2 {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+        }
+
+        /* Floating toast from bottom (same as dashboard) */
+        .toast-host {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 28px;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+        }
+        .toast-sphere {
+            pointer-events: auto;
+            background: #0f172a;
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 999px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 12px 40px rgba(15,23,42,0.35);
+            opacity: 0;
+            transform: translateY(24px) scale(0.96);
+            transition: opacity 0.28s ease, transform 0.28s ease;
+            max-width: 90vw;
+            text-align: center;
+        }
+        .toast-sphere.show {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        .toast-sphere.hide {
+            opacity: 0;
+            transform: translateY(16px) scale(0.96);
+        }
+
+        /* Page height lock so only table/cards scroll */
+        html, body { height: 100%; overflow: hidden; }
+        .app-layout { height: 100vh; overflow: hidden; }
+        .main-content {
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 0 !important;
+        }
+        .main-content > .top-bar { flex-shrink: 0; }
+        .page-wrap {
+            flex: 1 1 auto;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 24px !important;
+            overflow: hidden;
+        }
+        .stat-row { flex-shrink: 0; }
+        .panel-card.users-panel {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: none;
+            overflow: hidden;
+        }
+        .panel-card.users-panel .panel-toolbar,
+        .panel-card.users-panel .cards-header {
+            flex-shrink: 0;
+        }
+        .table-scroll {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            overflow-x: auto;
+            min-height: 0;
+            -webkit-overflow-scrolling: touch;
+        }
+        .table-scroll .users-table thead th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: #fafbfc;
+            box-shadow: 0 1px 0 #f1f5f9;
+        }
+        .users-cards-scroll {
+            flex: 1 1 auto;
+            overflow-y: auto;
+            min-height: 0;
+            -webkit-overflow-scrolling: touch;
+        }
     </style>
 </head>
 <body>
@@ -174,43 +408,43 @@
             </div>
             <div class="top-actions">
                 <a href="{{ url_for('admin.admin_export_users') }}" class="btn-export">Export CSV</a>
-                <button type="button" class="btn-create" onclick="openAddModal()">
+                <a href="{{ url_for('admin.admin_add_user') }}" class="btn-create">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                     Add User
-                </button>
+                </a>
             </div>
         </header>
         <div class="page-wrap">
             <div class="stat-row">
-                <a class="stat-card {% if not role_filter and not status_filter %}active-filter{% endif %}" href="{{ url_for('admin.admin_users') }}">
+                <a class="stat-card {% if not role_filter and not status_filter %}active-filter{% endif %}" href="{{ url_for('admin.admin_users', view=view) }}">
                     <div class="stat-card-top">
                         <div><p class="label">Total</p><p class="value">{{ stats.total }}</p></div>
                         <div class="stat-icon total"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
                     </div>
                     <p class="sub">Total registered accounts</p>
                 </a>
-                <a class="stat-card {% if role_filter == 'admin' %}active-filter{% endif %}" href="{{ url_for('admin.admin_users', role='admin') }}">
+                <a class="stat-card {% if role_filter == 'admin' %}active-filter{% endif %}" href="{{ url_for('admin.admin_users', role='admin', view=view) }}">
                     <div class="stat-card-top">
                         <div><p class="label">Admins</p><p class="value">{{ stats.admins }}</p></div>
                         <div class="stat-icon admins"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
                     </div>
                     <p class="sub">Administrator accounts</p>
                 </a>
-                <a class="stat-card {% if role_filter == 'agent' %}active-filter{% endif %}" href="{{ url_for('admin.admin_users', role='agent') }}">
+                <a class="stat-card {% if role_filter == 'agent' %}active-filter{% endif %}" href="{{ url_for('admin.admin_users', role='agent', view=view) }}">
                     <div class="stat-card-top">
                         <div><p class="label">Agents</p><p class="value">{{ stats.agents }}</p></div>
                         <div class="stat-icon agents"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
                     </div>
                     <p class="sub">Agents currently assigned</p>
                 </a>
-                <a class="stat-card {% if role_filter == 'customer' %}active-filter{% endif %}" href="{{ url_for('admin.admin_users', role='customer') }}">
+                <a class="stat-card {% if role_filter == 'customer' %}active-filter{% endif %}" href="{{ url_for('admin.admin_users', role='customer', view=view) }}">
                     <div class="stat-card-top">
                         <div><p class="label">Customers</p><p class="value">{{ stats.customers }}</p></div>
                         <div class="stat-icon customers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>
                     </div>
                     <p class="sub">Registered customers</p>
                 </a>
-                <a class="stat-card {% if status_filter == 'active' %}active-filter{% endif %}" href="{{ url_for('admin.admin_users', status='active') }}">
+                <a class="stat-card {% if status_filter == 'active' %}active-filter{% endif %}" href="{{ url_for('admin.admin_users', status='active', view=view) }}">
                     <div class="stat-card-top">
                         <div><p class="label">Active</p><p class="value">{{ stats.active }}</p></div>
                         <div class="stat-icon active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
@@ -219,15 +453,47 @@
                 </a>
             </div>
 
-            <div class="panel-card">
+            <div class="panel-card users-panel">
                 {% if view == 'cards' %}
-                <div class="cards-header">
-                    <h3>All users</h3>
-                    <a class="btn-back-table" href="{{ url_for('admin.admin_users', q=q, role=role_filter, status=status_filter) }}">← Back to table</a>
+                <div class="panel-toolbar">
+                    <form method="GET" action="{{ url_for('admin.admin_users') }}" class="filter-form">
+                        <input type="hidden" name="view" value="cards">
+                        <input type="search" name="q" value="{{ q or '' }}" placeholder="Search Users">
+                        <select name="role">
+                            <option value="">All roles</option>
+                            <option value="admin" {% if role_filter == 'admin' %}selected{% endif %}>Admin</option>
+                            <option value="agent" {% if role_filter == 'agent' %}selected{% endif %}>Agent</option>
+                            <option value="customer" {% if role_filter == 'customer' %}selected{% endif %}>Customer</option>
+                        </select>
+                        <select name="status">
+                            <option value="">All status</option>
+                            <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Account active</option>
+                            <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Account inactive</option>
+                            <option value="online" {% if status_filter == 'online' %}selected{% endif %}>Online now</option>
+                            <option value="offline" {% if status_filter == 'offline' %}selected{% endif %}>Offline</option>
+                        </select>
+                        <button type="submit" class="btn-filter">Filter</button>
+                        {% if q or role_filter or status_filter %}
+                        <a href="{{ url_for('admin.admin_users', view='cards') }}" class="btn-clear">Clear</a>
+                        {% endif %}
+                    </form>
+                    <a href="{{ url_for('admin.admin_users', q=q, role=role_filter, status=status_filter) }}" class="btn-towards-panel">
+                        ← Back to table
+                    </a>
                 </div>
+                <div class="users-cards-scroll">
                 <div class="users-cards">
                     {% for u in users %}
-                    <div class="user-card">
+                    <div class="user-card"
+                         data-id="{{ u.id }}"
+                         data-name="{{ u.full_name|e }}"
+                         data-email="{{ u.email|e }}"
+                         data-role="{{ u.role }}"
+                         data-phone="{{ (u.phone or '—')|e }}"
+                         data-joined="{{ u.created_at[:10] if u.created_at else '—' }}"
+                         data-online="{{ '1' if u.is_online else '0' }}"
+                         data-active="{{ '1' if u.is_active else '0' }}"
+                         data-avatar="{% if u.avatar %}{% if u.avatar.startswith('http') %}{{ u.avatar }}{% else %}{{ url_for('static', filename='uploads/avatars/' + u.avatar) }}{% endif %}{% endif %}">
                         <div class="user-card-photo">
                             {% if u.avatar %}
                             <img src="{% if u.avatar.startswith('http') %}{{ u.avatar }}{% else %}{{ url_for('static', filename='uploads/avatars/' + u.avatar) }}{% endif %}" alt="{{ u.full_name }}">
@@ -239,13 +505,12 @@
                         <p class="user-card-email">{{ u.email }}</p>
                         <p class="user-card-meta">{{ u.role|capitalize }} · {{ u.phone or 'No phone' }}</p>
                         <p class="user-card-meta">{% if u.is_online %}<span class="presence online">Online</span>{% else %}<span class="presence offline">Offline</span>{% endif %}{% if not u.is_active %} · Inactive{% endif %}</p>
-                        <div style="margin-top:12px">
-                            <a href="{{ url_for('admin.admin_edit_user', user_id=u.id) }}" class="btn-sm btn-edit">Edit</a>
-                        </div>
+                        <a href="{{ url_for('admin.admin_user_detail', user_id=u.id) }}" class="btn-details">Details</a>
                     </div>
                     {% else %}
                     <p class="empty" style="grid-column:1/-1;text-align:center;color:#94a3b8;padding:32px">No users found</p>
                     {% endfor %}
+                </div>
                 </div>
                 {% else %}
 
@@ -270,24 +535,22 @@
                         <a href="{{ url_for('admin.admin_users') }}" class="btn-clear">Clear</a>
                         {% endif %}
                     </form>
+                    <a href="{{ url_for('admin.admin_users', view='cards', q=q, role=role_filter, status=status_filter) }}" class="btn-towards-panel">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                        Towards panel
+                    </a>
                 </div>
 
-                <form method="POST" action="{{ url_for('admin.admin_bulk_users') }}" id="bulkForm">
-                    <div class="bulk-bar" id="bulkBar">
-                        <span class="bulk-count"><span id="selectedCount">0</span> selected</span>
-                        <button type="submit" name="action" value="delete" class="danger" onclick="return confirm('Delete selected users permanently?');">Delete</button>
-                    </div>
+                <div class="table-scroll">
                     <table class="users-table">
                         <thead>
                             <tr>
-                                <th style="width:40px"><input type="checkbox" id="selectAll" title="Select all"></th>
                                 <th>Name</th><th>Email</th><th>Role</th><th>Phone</th><th>Joined</th><th>Status</th><th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for u in users %}
                             <tr>
-                                <td>{% if u.id != session.user_id %}<input type="checkbox" name="user_ids" value="{{ u.id }}" class="row-check">{% endif %}</td>
                                 <td><span class="user-name">{{ u.full_name }}</span></td>
                                 <td>{{ u.email }}</td>
                                 <td><span class="badge badge-{{ u.role }}">{{ u.role }}</span></td>
@@ -299,68 +562,67 @@
                                 </td>
                                 <td>
                                     <div class="actions-cell">
+                                        <a href="{{ url_for('admin.admin_user_detail', user_id=u.id) }}" class="btn-sm btn-info">Details</a>
                                         <a href="{{ url_for('admin.admin_edit_user', user_id=u.id) }}" class="btn-sm btn-edit">Edit</a>
-                                        <a href="{{ url_for('admin.admin_users', view='cards', q=q, role=role_filter, status=status_filter) }}" class="btn-sm btn-info">Information</a>
                                     </div>
                                 </td>
                             </tr>
                             {% else %}
-                            <tr><td colspan="8" class="empty">No users found</td></tr>
+                            <tr><td colspan="7" class="empty">No users found</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
-                </form>
+                </div>
                 {% endif %}
             </div>
         </div>
     </main>
 </div>
 
-<div class="modal-overlay" id="addUserModal">
-    <div class="modal">
-        <div class="modal-header">
-            <h2>Add User</h2>
-            <button type="button" class="modal-close" onclick="closeAddModal()" aria-label="Close">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>
-        </div>
-        <div class="modal-body">
-            <form method="POST" action="{{ url_for('admin.admin_add_user') }}">
-                <div class="form-row"><div class="form-group full"><label for="full_name">Full Name *</label><input type="text" id="full_name" name="full_name" placeholder="e.g. John Smith" required></div></div>
-                <div class="form-row">
-                    <div class="form-group"><label for="email">Email *</label><input type="email" id="email" name="email" placeholder="name@estacle.com" required></div>
-                    <div class="form-group"><label for="phone">Phone</label><input type="text" id="phone" name="phone" placeholder="+1-555-0000"></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label for="role">Role *</label><select id="role" name="role" required><option value="agent">Agent</option><option value="customer">Customer</option><option value="admin">Admin</option></select></div>
-                    <div class="form-group"><label for="password">Password *</label><input type="password" id="password" name="password" placeholder="Min. 6 characters" required minlength="6"></div>
-                </div>
-                <div class="modal-actions">
-                    <button type="button" class="btn-cancel" onclick="closeAddModal()">Cancel</button>
-                    <button type="submit" class="btn-submit">Create User</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-<div class="toast-wrap">
+{# flashes → floating bottom toast like dashboard #}
+<div id="flash-data" style="display:none">
 {% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}{% for category, message in messages %}<div class="toast {{ category }}">{{ message }}</div>{% endfor %}{% endif %}
+{% if messages %}
+{% for category, message in messages %}
+<span data-msg="{{ message|e }}" data-cat="{{ category }}"></span>
+{% endfor %}
+{% endif %}
 {% endwith %}
 </div>
+<div class="toast-host" id="toastHost" aria-live="polite"></div>
 <script>
-function openAddModal(){document.getElementById('addUserModal').classList.add('open');document.getElementById('full_name').focus();}
-function closeAddModal(){document.getElementById('addUserModal').classList.remove('open');}
-document.getElementById('addUserModal').addEventListener('click',function(e){if(e.target===this)closeAddModal();});
-document.addEventListener('keydown',function(e){if(e.key==='Escape')closeAddModal();});
-const selectAll=document.getElementById('selectAll'),bulkBar=document.getElementById('bulkBar'),selectedCount=document.getElementById('selectedCount');
-function updateBulk(){const checks=document.querySelectorAll('.row-check:checked');selectedCount.textContent=checks.length;bulkBar.classList.toggle('show',checks.length>0);if(selectAll){const all=document.querySelectorAll('.row-check');selectAll.checked=all.length&&checks.length===all.length;}}
-if(selectAll){selectAll.addEventListener('change',function(){document.querySelectorAll('.row-check').forEach(function(c){c.checked=selectAll.checked;});updateBulk();});}
-document.querySelectorAll('.row-check').forEach(function(c){c.addEventListener('change',updateBulk);});
-setTimeout(function(){document.querySelectorAll('.toast').forEach(function(t){t.style.opacity='0';t.style.transition='opacity 0.3s';setTimeout(function(){t.remove();},300);});},4000);
-</script>
 
-<script>
+
+(function() {
+    var host = document.getElementById('toastHost');
+    var data = document.getElementById('flash-data');
+    if (!host || !data) return;
+    var items = data.querySelectorAll('span[data-msg]');
+    if (!items.length) return;
+
+    function showToast(text) {
+        var el = document.createElement('div');
+        el.className = 'toast-sphere';
+        el.textContent = text || 'Updated Successfully';
+        host.innerHTML = '';
+        host.appendChild(el);
+        requestAnimationFrame(function() {
+            el.classList.add('show');
+        });
+        setTimeout(function() {
+            el.classList.add('hide');
+            el.classList.remove('show');
+            setTimeout(function() { el.remove(); }, 300);
+        }, 2800);
+    }
+
+    var msg = items[0].getAttribute('data-msg') || '';
+    if (msg) {
+        showToast(msg);
+    } else {
+        showToast('Updated Successfully');
+    }
+})();
 (function(){
   function goOffline(){
     try { navigator.sendBeacon('/presence/offline'); } catch(e) {}

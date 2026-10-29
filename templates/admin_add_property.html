@@ -1,132 +1,219 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Estacle | Admin – Add Property</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estacle | Add Property</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+html, body { height: 100%; }
+.main-content { display: flex; flex-direction: column; min-height: 100vh; padding-bottom: 0 !important; }
+.top-bar.dash-top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 24px !important; background: #fff; border-bottom: 1px solid #e8ecf1;
+  box-shadow: none; gap: 12px; flex-wrap: wrap; flex-shrink: 0;
+}
+.dash-top .page-title { font-size: 17px; font-weight: 700; color: #0f172a; margin: 0; }
+.dash-top .page-subtitle { font-size: 12.5px; color: #64748b; margin: 2px 0 0; }
+.btn-back {
+  display: inline-flex; align-items: center; height: 34px; padding: 0 12px;
+  background: #fff; color: #475569; border: 1px solid #e8ecf1; border-radius: 8px;
+  font-size: 12.5px; font-weight: 600; text-decoration: none;
+}
+.page-wrap {
+  flex: 1; padding: 16px 24px 28px; width: 100%; box-sizing: border-box;
+  display: flex; flex-direction: column; align-items: center;
+}
+.page-wrap > .panel, .page-wrap > form.panel { width: 100%; max-width: 860px; }
+.panel {
+  background: #fff; border: 1px solid #e8ecf1; border-radius: 12px; overflow: hidden;
+  display: flex; flex-direction: column; margin-bottom: 14px;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+}
+.panel-hd {
+  padding: 10px 16px; border-bottom: 1px solid #f1f5f9; background: #fafbfc;
+  font-size: 13px; font-weight: 600; color: #0f172a;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.panel-hd span { color: #94a3b8; font-weight: 500; font-size: 11.5px; }
+.panel-bd { padding: 14px 16px; }
+.panel-ft {
+  padding: 10px 16px; border-top: 1px solid #f1f5f9; background: #fafbfc;
+  display: flex; gap: 8px; justify-content: flex-end;
+}
+.sec {
+  font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;
+  letter-spacing: 0.04em; margin: 14px 0 8px; padding-bottom: 5px; border-bottom: 1px solid #f1f5f9;
+}
+.sec:first-child { margin-top: 0; }
+.g { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 10px; }
+.g .s2 { grid-column: span 2; }
+.g .s3 { grid-column: 1 / -1; }
+@media (max-width: 800px) { .g { grid-template-columns: 1fr 1fr; } .g .s2 { grid-column: span 1; } }
+@media (max-width: 480px) { .g { grid-template-columns: 1fr; } }
+.fg { display: flex; flex-direction: column; gap: 3px; }
+.fg label { font-size: 11.5px; font-weight: 600; color: #475569; }
+.fg label .r { color: #dc2626; }
+.fg input, .fg select, .fg textarea {
+  height: 36px; padding: 0 9px; border: 1px solid #e2e8f0; border-radius: 7px;
+  font-size: 13px; font-family: inherit; color: #0f172a; outline: none; width: 100%; box-sizing: border-box;
+}
+.fg textarea { height: 72px; padding: 8px 9px; resize: vertical; }
+.fg input[type="file"] { height: auto; padding: 5px 8px; font-size: 12px; }
+.fg input:focus, .fg select:focus, .fg textarea:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+.btn-cancel {
+  height: 34px; padding: 0 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 7px;
+  font-size: 12.5px; font-weight: 600; color: #64748b; text-decoration: none; display: inline-flex; align-items: center;
+}
+.btn-save {
+  height: 34px; padding: 0 14px; background: #1e1b4b; border: none; border-radius: 7px;
+  font-size: 12.5px; font-weight: 600; color: #fff; cursor: pointer; font-family: inherit;
+}
+.btn-ghost {
+  height: 34px; padding: 0 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 7px;
+  font-size: 12.5px; font-weight: 600; color: #475569; text-decoration: none; display: inline-flex; align-items: center;
+}
+.format-box {
+  background: #0f172a; color: #cbd5e1; border-radius: 8px; padding: 12px 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 10.5px; line-height: 1.45; overflow-x: auto; white-space: pre; margin: 0 0 10px; user-select: all;
+}
+.rules { margin: 0 0 12px; padding: 0 0 0 16px; font-size: 12px; color: #64748b; line-height: 1.5; }
+.import-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.import-row input[type="file"] {
+  flex: 1; min-width: 160px; height: 34px; padding: 5px 8px; border: 1px solid #e2e8f0;
+  border-radius: 7px; font-size: 12px; font-family: inherit; background: #fff;
+}
+.toast-host { position: fixed; left: 0; right: 0; bottom: 22px; z-index: 9999; display: flex; justify-content: center; pointer-events: none; }
+.toast-sphere {
+  pointer-events: auto; background: #0f172a; color: #fff; padding: 11px 20px; border-radius: 999px;
+  font-size: 13px; font-weight: 500; opacity: 0; transform: translateY(16px); transition: 0.25s ease;
+}
+.toast-sphere.show { opacity: 1; transform: translateY(0); }
+</style>
 </head>
 <body>
 <div class="app-layout">
-    {% set active = 'add_property' %}
-    {% include 'partials/admin_sidebar.html' %}
-    <main class="main-content">
-        <header class="top-bar">
-            <div>
-                <h1 class="page-title">Add Property</h1>
-                <p class="page-subtitle">Full listing with photos and details · Prices in {{ currency }}</p>
-            </div>
-            <a href="{{ url_for('admin.admin_properties') }}" class="btn-secondary">Back</a>
-        </header>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
-        {% endwith %}
-
-        <div class="form-page-hero">
-            <h2>New listing</h2>
-            <p>Complete property details, pricing, owner info, amenities, and upload photos. Currency is set in Settings ({{ currency }}).</p>
-        </div>
-
-        <div class="panel form-panel" style="max-width:900px">
-            <form method="POST" enctype="multipart/form-data" class="admin-form">
-                <div class="form-section-title">Basic</div>
-                <div class="form-row">
-                    <div class="form-group"><label>Title *</label><input name="title" required placeholder="e.g. Sea-view 3BHK Apartment"></div>
-                    <div class="form-group"><label>Listing type</label>
-                        <select name="listing_type"><option value="sale">For Sale</option><option value="rent">For Rent</option></select>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label>Property type</label>
-                        <select name="property_type">
-                            <option value="apartment">Apartment</option><option value="house">House</option>
-                            <option value="villa">Villa</option><option value="condo">Condo</option>
-                            <option value="townhouse">Townhouse</option><option value="land">Land</option>
-                            <option value="commercial">Commercial</option>
-                        </select>
-                    </div>
-                    <div class="form-group"><label>Category</label>
-                        <select name="category"><option value="residential">Residential</option><option value="commercial">Commercial</option><option value="industrial">Industrial</option></select>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label>Status</label>
-                        <select name="status"><option value="available">Available</option><option value="under_offer">Under Offer</option><option value="sold">Sold</option><option value="rented">Rented</option></select>
-                    </div>
-                    <div class="form-group"><label>Furnishing</label>
-                        <select name="furnishing"><option value="">—</option><option value="unfurnished">Unfurnished</option><option value="semi">Semi-furnished</option><option value="furnished">Fully furnished</option></select>
-                    </div>
-                </div>
-                <div class="form-group"><label>Description</label><textarea name="description" placeholder="Highlights, neighborhood, amenities..."></textarea></div>
-
-                <div class="form-section-title">Pricing ({{ currency }})</div>
-                <div class="form-row">
-                    <div class="form-group"><label>Sale / list price *</label><input type="number" name="price" step="0.01" required placeholder="0"></div>
-                    <div class="form-group"><label>Price per sqft</label><input type="number" name="per_sqft" step="0.01"></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label>Monthly rent</label><input type="number" name="monthly_rent" step="0.01"></div>
-                    <div class="form-group"><label>Security deposit</label><input type="number" name="security_deposit" step="0.01"></div>
-                </div>
-                <div class="form-group"><label>Maintenance (monthly)</label><input type="number" name="maintenance" step="0.01"></div>
-
-                <div class="form-section-title">Size & specs</div>
-                <div class="form-row">
-                    <div class="form-group"><label>Bedrooms</label><input type="number" name="bedrooms" min="0"></div>
-                    <div class="form-group"><label>Bathrooms</label><input type="number" name="bathrooms" step="0.5" min="0"></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label>Built-up area (sqft)</label><input type="number" name="area_sqft" step="0.01"></div>
-                    <div class="form-group"><label>Carpet area (sqft)</label><input type="number" name="carpet_area" step="0.01"></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label>Floor</label><input name="floor" placeholder="e.g. 12 / G+2"></div>
-                    <div class="form-group"><label>Year built</label><input name="year_built" placeholder="2018"></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label>Facing</label><input name="facing" placeholder="East / North-facing"></div>
-                    <div class="form-group"><label>Parking</label><input name="parking" placeholder="2 covered"></div>
-                </div>
-                <div class="form-group"><label>Amenities</label><input name="amenities" placeholder="Pool, Gym, Security, Power backup (comma-separated)"></div>
-
-                <div class="form-section-title">Location</div>
-                <div class="form-group"><label>Address</label><input name="address" placeholder="Street / building"></div>
-                <div class="form-row">
-                    <div class="form-group"><label>City</label><input name="city"></div>
-                    <div class="form-group"><label>State / Emirate</label><input name="state"></div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label>PIN / ZIP</label><input name="zip_code"></div>
-                    <div class="form-group"><label>Agent</label>
-                        <select name="agent_id"><option value="">— Unassigned —</option>{% for a in agents %}<option value="{{ a.id }}">{{ a.full_name }}</option>{% endfor %}</select>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group"><label>Latitude</label><input name="latitude" placeholder="Optional"></div>
-                    <div class="form-group"><label>Longitude</label><input name="longitude" placeholder="Optional"></div>
-                </div>
-
-                <div class="form-section-title">Owner / seller</div>
-                <div class="form-row">
-                    <div class="form-group"><label>Seller / owner name</label><input name="seller_name"></div>
-                    <div class="form-group"><label>Seller phone</label><input name="seller_phone"></div>
-                </div>
-
-                <div class="form-section-title">Photos</div>
-                <div class="form-group">
-                    <label>Upload images</label>
-                    <input type="file" name="photos" accept="image/*" multiple>
-                    <span class="form-hint">You can select multiple images (JPG, PNG, WebP)</span>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary">Publish Property</button>
-                    <a href="{{ url_for('admin.admin_properties') }}" class="btn-secondary">Cancel</a>
-                </div>
-            </form>
-        </div>
-    </main>
+{% set active = 'properties' %}
+{% include 'partials/admin_sidebar.html' %}
+<main class="main-content">
+<header class="top-bar dash-top">
+  <div>
+    <h1 class="page-title">Add Property</h1>
+    <p class="page-subtitle">Create a listing or import from CSV / Excel</p>
+  </div>
+  <a href="{{ url_for('admin.admin_properties') }}" class="btn-back">← Properties</a>
+</header>
+<div class="page-wrap">
+<div id="flash-data" style="display:none">
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}{% for category, message in messages %}<span data-msg="{{ message|e }}"></span>{% endfor %}{% endif %}
+{% endwith %}
 </div>
+
+<form method="POST" enctype="multipart/form-data" class="panel" action="{{ url_for('admin.admin_add_property') }}">
+  <div class="panel-hd">New listing <span>* required</span></div>
+  <div class="panel-bd">
+    <p class="sec">Listing basics</p>
+    <div class="g">
+      <div class="fg s3"><label>Title <span class="r">*</span></label><input type="text" name="title" required placeholder="e.g. 3BHK Sea View Apartment"></div>
+      <div class="fg"><label>Status</label>
+        <select name="status"><option value="available">Available</option><option value="under_offer">Under offer</option><option value="sold">Sold</option><option value="rented">Rented</option></select>
+      </div>
+      <div class="fg"><label>Listing type</label>
+        <select name="listing_type"><option value="sale">Sale</option><option value="rent">Rent</option></select>
+      </div>
+      <div class="fg"><label>Property type</label>
+        <select name="property_type"><option value="apartment">Apartment</option><option value="house">House</option><option value="villa">Villa</option><option value="plot">Plot</option><option value="commercial">Commercial</option><option value="office">Office</option><option value="warehouse">Warehouse</option></select>
+      </div>
+      <div class="fg"><label>Category</label>
+        <select name="category"><option value="residential">Residential</option><option value="commercial">Commercial</option><option value="industrial">Industrial</option></select>
+      </div>
+      <div class="fg s2"><label>Amenities</label><input type="text" name="amenities" placeholder="Gym, pool, clubhouse…"></div>
+      <div class="fg s3"><label>Description</label><textarea name="description" placeholder="Highlights, locality, unique selling points…"></textarea></div>
+    </div>
+    <p class="sec">Pricing ({{ currency }})</p>
+    <div class="g">
+      <div class="fg"><label>List / sale price <span class="r">*</span></label><input type="number" name="price" step="0.01" required placeholder="0"></div>
+      <div class="fg"><label>Price per sqft</label><input type="number" name="per_sqft" step="0.01" placeholder="0"></div>
+      <div class="fg"><label>Monthly rent</label><input type="number" name="monthly_rent" step="0.01" placeholder="0"></div>
+    </div>
+    <div class="g" style="margin-top:8px">
+      <div class="fg"><label>Security deposit</label><input type="number" name="security_deposit" step="0.01" placeholder="0"></div>
+      <div class="fg s2"><label>Maintenance / mo</label><input type="number" name="maintenance" step="0.01" placeholder="0"></div>
+    </div>
+    <p class="sec">Size & specifications</p>
+    <div class="g">
+      <div class="fg"><label>Bedrooms</label><input type="number" name="bedrooms" min="0"></div>
+      <div class="fg"><label>Bathrooms</label><input type="number" name="bathrooms" step="0.5" min="0"></div>
+      <div class="fg"><label>Built-up (sqft)</label><input type="number" name="area_sqft" step="0.01"></div>
+      <div class="fg"><label>Carpet (sqft)</label><input type="number" name="carpet_area" step="0.01"></div>
+      <div class="fg"><label>Floor</label><input type="text" name="floor" placeholder="e.g. 12 / 18"></div>
+      <div class="fg"><label>Furnishing</label>
+        <select name="furnishing"><option value="">—</option><option value="unfurnished">Unfurnished</option><option value="semi">Semi-furnished</option><option value="furnished">Fully furnished</option></select>
+      </div>
+      <div class="fg"><label>Parking</label><input type="text" name="parking" placeholder="e.g. 2 covered"></div>
+      <div class="fg"><label>Facing</label><input type="text" name="facing" placeholder="East / North"></div>
+      <div class="fg"><label>Year built</label><input type="text" name="year_built" placeholder="2019"></div>
+    </div>
+    <p class="sec">Location</p>
+    <div class="g">
+      <div class="fg s3"><label>Street address</label><input type="text" name="address"></div>
+      <div class="fg"><label>City</label><input type="text" name="city"></div>
+      <div class="fg"><label>State</label><input type="text" name="state"></div>
+      <div class="fg"><label>Postal code</label><input type="text" name="zip_code"></div>
+      <div class="fg"><label>Latitude</label><input type="text" name="latitude"></div>
+      <div class="fg"><label>Longitude</label><input type="text" name="longitude"></div>
+    </div>
+    <p class="sec">Assignment & seller</p>
+    <div class="g">
+      <div class="fg"><label>Assigned agent</label>
+        <select name="agent_id"><option value="">— Unassigned —</option>
+        {% for a in agents %}<option value="{{ a.id }}">{{ a.full_name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="fg"><label>Seller name</label><input type="text" name="seller_name"></div>
+      <div class="fg"><label>Seller phone</label><input type="text" name="seller_phone"></div>
+      <div class="fg"><label>Photos</label><input type="file" name="photos" accept="image/*" multiple></div>
+      <div class="fg s2"><label>Videos</label><input type="file" name="videos" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" multiple>
+        <span class="hint" style="font-size:11px;color:#94a3b8">MP4, WebM, MOV</span></div>
+    </div>
+  </div>
+  <div class="panel-ft">
+    <a href="{{ url_for('admin.admin_properties') }}" class="btn-cancel">Cancel</a>
+    <button type="submit" class="btn-save">Create listing</button>
+  </div>
+</form>
+
+<div class="panel">
+  <div class="panel-hd">Import listings <span>CSV · Excel · full column set</span></div>
+  <div class="panel-bd">
+    <p class="sec" style="margin-top:0">Format (click to select · also printed in terminal)</p>
+    <div class="format-box" id="formatBox">title,description,price,property_type,status,listing_type,category,address,city,state,zip_code,bedrooms,bathrooms,area_sqft,carpet_area,floor,furnishing,parking,amenities,seller_name,seller_phone,monthly_rent,security_deposit,maintenance,per_sqft,year_built,facing,agent_email
+3BHK Sea View,Corner unit with balcony,12500000,apartment,available,sale,residential,Marine Drive,Mumbai,MH,400001,3,2,1450,1200,12,furnished,2 covered,Pool; Gym,Rajesh,+919800000000,,,5000,8620,2019,East,</div>
+    <ul class="rules">
+      <li><strong>title</strong> and <strong>price</strong> required</li>
+      <li>property_type: apartment · house · villa · plot · commercial · office · warehouse</li>
+      <li>status: available · under_offer · sold · rented · purpose: sale · rent</li>
+      <li>agent_email optional — must match an existing agent account</li>
+    </ul>
+    <form method="POST" action="{{ url_for('admin.admin_import_properties') }}" enctype="multipart/form-data" class="import-row">
+      <input type="file" name="import_file" accept=".csv,.xlsx,.xls" required>
+      <a href="{{ url_for('admin.admin_properties_import_template') }}" class="btn-ghost">Download template</a>
+      <button type="submit" class="btn-save">Import file</button>
+    </form>
+  </div>
+</div>
+</div>
+</main>
+</div>
+<div class="toast-host" id="toastHost" aria-live="polite"></div>
+<script>
+document.getElementById('formatBox').addEventListener('click', function() {
+  var r = document.createRange(); r.selectNodeContents(this);
+  var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+});
+(function(){var h=document.getElementById('toastHost'),d=document.getElementById('flash-data');if(!h||!d)return;var i=d.querySelectorAll('span[data-msg]');if(!i.length)return;var e=document.createElement('div');e.className='toast-sphere';e.textContent=i[0].getAttribute('data-msg')||'Done';h.appendChild(e);requestAnimationFrame(function(){e.classList.add('show');});setTimeout(function(){e.classList.add('hide');setTimeout(function(){e.remove();},250);},2800);})();
+</script>
 </body>
 </html>

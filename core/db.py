@@ -184,6 +184,7 @@ def migrate_db():
         ('latitude', 'TEXT'),
         ('longitude', 'TEXT'),
         ('photos', 'TEXT'),
+            ('videos', 'TEXT'),
         ('year_built', 'TEXT'),
         ('facing', 'TEXT'),
     ]
@@ -252,4 +253,26 @@ def migrate_db():
             db.execute('ALTER TABLE users ADD COLUMN last_seen TIMESTAMP')
         except Exception:
             pass
+    extra_user_cols = [
+        ('job_title', 'TEXT'),
+        ('department', 'TEXT'),
+        ('employee_id', 'TEXT'),
+        ('license_no', 'TEXT'),
+        ('commission_rate', 'REAL'),
+        ('alt_phone', 'TEXT'),
+        ('address', 'TEXT'),
+        ('city', 'TEXT'),
+        ('state', 'TEXT'),
+        ('country', 'TEXT'),
+        ('postal_code', 'TEXT'),
+        ('notes', 'TEXT'),
+        ('hire_date', 'TEXT'),
+        ('timezone', 'TEXT'),
+    ]
+    for col, typedef in extra_user_cols:
+        if col not in ucols:
+            try:
+                db.execute(f'ALTER TABLE users ADD COLUMN {col} {typedef}')
+            except Exception:
+                pass
     db.commit()

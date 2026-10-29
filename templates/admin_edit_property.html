@@ -2,62 +2,169 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Estacle | Admin – Edit Property</title>
+<title>Estacle | Edit Property</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+        html, body { height: 100%; }
+        .main-content { display: flex; flex-direction: column; min-height: 100vh; padding-bottom: 0 !important; }
+        .top-bar.dash-top {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 24px !important; background: #fff; border-bottom: 1px solid #e8ecf1;
+            box-shadow: none; gap: 12px; flex-wrap: wrap; flex-shrink: 0;
+        }
+        .dash-top .page-title { font-size: 17px; font-weight: 700; color: #0f172a; margin: 0; }
+        .dash-top .page-subtitle { font-size: 12.5px; color: #64748b; margin: 2px 0 0; }
+        .btn-back {
+            display: inline-flex; align-items: center; height: 34px; padding: 0 12px;
+            background: #fff; color: #475569; border: 1px solid #e8ecf1; border-radius: 8px;
+            font-size: 12.5px; font-weight: 600; text-decoration: none;
+        }
+        .page-wrap { flex: 1; padding: 12px 24px 16px; width: 100%; box-sizing: border-box; }
+        .panel {
+            background: #fff; border: 1px solid #e8ecf1; border-radius: 12px; overflow: hidden;
+            display: flex; flex-direction: column; max-width: 980px;
+        }
+        .panel-hd {
+            padding: 9px 14px; border-bottom: 1px solid #f1f5f9; background: #fafbfc;
+            font-size: 12.5px; font-weight: 600; color: #0f172a;
+            display: flex; justify-content: space-between;
+        }
+        .panel-hd span { color: #94a3b8; font-weight: 500; font-size: 11.5px; }
+        .panel-bd { padding: 12px 14px; }
+        .panel-ft {
+            padding: 9px 14px; border-top: 1px solid #f1f5f9; background: #fafbfc;
+            display: flex; gap: 8px; justify-content: flex-end;
+        }
+        .sec {
+            font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;
+            letter-spacing: 0.04em; margin: 12px 0 8px; padding-bottom: 5px; border-bottom: 1px solid #f1f5f9;
+        }
+        .sec:first-child { margin-top: 0; }
+        .g { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 10px; }
+        .g .s2 { grid-column: span 2; }
+        .g .s3 { grid-column: 1 / -1; }
+        @media (max-width: 800px) { .g { grid-template-columns: 1fr 1fr; } .g .s2 { grid-column: span 1; } }
+        @media (max-width: 480px) { .g { grid-template-columns: 1fr; } }
+        .fg { display: flex; flex-direction: column; gap: 3px; }
+        .fg label { font-size: 11.5px; font-weight: 600; color: #475569; }
+        .fg label .r { color: #dc2626; }
+        .fg input, .fg select, .fg textarea {
+            height: 36px; padding: 0 9px; border: 1px solid #e2e8f0; border-radius: 7px;
+            font-size: 13px; font-family: inherit; color: #0f172a; outline: none; width: 100%; box-sizing: border-box;
+        }
+        .fg textarea { height: 72px; padding: 8px 9px; resize: vertical; }
+        .fg input[type="file"] { height: auto; padding: 5px 8px; font-size: 12px; }
+        .fg input:focus, .fg select:focus, .fg textarea:focus { border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
+        .btn-cancel {
+            height: 34px; padding: 0 12px; background: #fff; border: 1px solid #e2e8f0; border-radius: 7px;
+            font-size: 12.5px; font-weight: 600; color: #64748b; text-decoration: none; display: inline-flex; align-items: center;
+        }
+        .btn-save {
+            height: 34px; padding: 0 14px; background: #1e1b4b; border: none; border-radius: 7px;
+            font-size: 12.5px; font-weight: 600; color: #fff; cursor: pointer; font-family: inherit;
+        }
+        .toast-host { position: fixed; left: 0; right: 0; bottom: 22px; z-index: 9999; display: flex; justify-content: center; pointer-events: none; }
+        .toast-sphere {
+            pointer-events: auto; background: #0f172a; color: #fff; padding: 11px 20px; border-radius: 999px;
+            font-size: 13px; font-weight: 500; opacity: 0; transform: translateY(16px); transition: 0.25s ease;
+        }
+        .toast-sphere.show { opacity: 1; transform: translateY(0); }
+</style>
 </head>
 <body>
 <div class="app-layout">
 {% set active = 'properties' %}
 {% include 'partials/admin_sidebar.html' %}
 <main class="main-content">
-<header class="top-bar">
-<div><h1 class="page-title">Edit Property</h1><p class="page-subtitle">Update listing details</p></div>
-
+<header class="top-bar dash-top">
+<div><h1 class="page-title">Edit Property</h1><p class="page-subtitle">{{ prop.title }} · #{{ prop.id }}</p></div>
+<div style="display:flex;gap:8px">
+<a href="{{ url_for('admin.admin_property_detail', prop_id=prop.id) }}" class="btn-back">Details</a>
+<a href="{{ url_for('admin.admin_properties') }}" class="btn-back">← Properties</a>
+</div>
 </header>
-{% with messages = get_flashed_messages(with_categories=true) %}
-{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
-{% endwith %}
+<div class="page-wrap">
+<div id="flash-data" style="display:none">{% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<span data-msg="{{ message|e }}"></span>{% endfor %}{% endif %}{% endwith %}</div>
+<form method="POST" enctype="multipart/form-data" class="panel">
+<div class="panel-hd">Update listing <span>* required</span></div>
+<div class="panel-bd">
+                    <p class="sec">Listing basics</p>
+                    <div class="g">
+                        <div class="fg s2"><label>Title <span class="r">*</span></label><input type="text" name="title" value="{{ prop.title or "" }}" required placeholder="e.g. 3BHK Sea View Apartment"></div>
+                        <div class="fg"><label>Status</label><select name="status"><option value="available" {% if (prop.status or '') == 'available' %}selected{% endif %}>Available</option>
+<option value="under_offer" {% if (prop.status or '') == 'under_offer' %}selected{% endif %}>Under offer</option>
+<option value="sold" {% if (prop.status or '') == 'sold' %}selected{% endif %}>Sold</option>
+<option value="rented" {% if (prop.status or '') == 'rented' %}selected{% endif %}>Rented</option></select></div>
+                        <div class="fg"><label>Listing type</label><select name="listing_type"><option value="sale" {% if (prop.listing_type or '') == 'sale' %}selected{% endif %}>Sale</option>
+<option value="rent" {% if (prop.listing_type or '') == 'rent' %}selected{% endif %}>Rent</option></select></div>
+                        <div class="fg"><label>Property type</label><select name="property_type"><option value="apartment" {% if (prop.property_type or '') == 'apartment' %}selected{% endif %}>Apartment</option>
+<option value="house" {% if (prop.property_type or '') == 'house' %}selected{% endif %}>House</option>
+<option value="villa" {% if (prop.property_type or '') == 'villa' %}selected{% endif %}>Villa</option>
+<option value="plot" {% if (prop.property_type or '') == 'plot' %}selected{% endif %}>Plot</option>
+<option value="commercial" {% if (prop.property_type or '') == 'commercial' %}selected{% endif %}>Commercial</option>
+<option value="office" {% if (prop.property_type or '') == 'office' %}selected{% endif %}>Office</option>
+<option value="warehouse" {% if (prop.property_type or '') == 'warehouse' %}selected{% endif %}>Warehouse</option></select></div>
+                        <div class="fg"><label>Category</label><select name="category"><option value="residential" {% if (prop.category or '') == 'residential' %}selected{% endif %}>Residential</option>
+<option value="commercial" {% if (prop.category or '') == 'commercial' %}selected{% endif %}>Commercial</option>
+<option value="industrial" {% if (prop.category or '') == 'industrial' %}selected{% endif %}>Industrial</option></select></div>
+                        <div class="fg s3"><label>Description</label><textarea name="description" placeholder="Highlights, locality, unique selling points…">{{ prop.description or "" }}</textarea></div>
+                    </div>
+                    <p class="sec">Pricing ({{ currency }})</p>
+                    <div class="g">
+                        <div class="fg"><label>List / sale price <span class="r">*</span></label><input type="number" name="price" step="0.01" value="{{ prop.price if prop.price is not none else "" }}" required></div>
+                        <div class="fg"><label>Price per sqft</label><input type="number" name="per_sqft" step="0.01" value="{{ prop.per_sqft if prop.per_sqft is not none else "" }}"></div>
+                        <div class="fg"><label>Monthly rent</label><input type="number" name="monthly_rent" step="0.01" value="{{ prop.monthly_rent if prop.monthly_rent is not none else "" }}"></div>
+                        <div class="fg"><label>Security deposit</label><input type="number" name="security_deposit" step="0.01" value="{{ prop.security_deposit if prop.security_deposit is not none else "" }}"></div>
+                        <div class="fg"><label>Maintenance / mo</label><input type="number" name="maintenance" step="0.01" value="{{ prop.maintenance if prop.maintenance is not none else "" }}"></div>
+                    </div>
+                    <p class="sec">Size & specifications</p>
+                    <div class="g">
+                        <div class="fg"><label>Bedrooms</label><input type="number" name="bedrooms" min="0" value="{{ prop.bedrooms if prop.bedrooms is not none else "" }}"></div>
+                        <div class="fg"><label>Bathrooms</label><input type="number" name="bathrooms" step="0.5" min="0" value="{{ prop.bathrooms if prop.bathrooms is not none else "" }}"></div>
+                        <div class="fg"><label>Built-up (sqft)</label><input type="number" name="area_sqft" step="0.01" value="{{ prop.area_sqft if prop.area_sqft is not none else "" }}"></div>
+                        <div class="fg"><label>Carpet (sqft)</label><input type="number" name="carpet_area" step="0.01" value="{{ prop.carpet_area if prop.carpet_area is not none else "" }}"></div>
+                        <div class="fg"><label>Floor</label><input type="text" name="floor" value="{{ prop.floor or "" }}" placeholder="e.g. 12 / 18"></div>
+                        <div class="fg"><label>Furnishing</label><select name="furnishing"><option value="">—</option>
+<option value="unfurnished" {% if (prop.furnishing or '') == 'unfurnished' %}selected{% endif %}>Unfurnished</option>
+<option value="semi" {% if (prop.furnishing or '') == 'semi' %}selected{% endif %}>Semi-furnished</option>
+<option value="furnished" {% if (prop.furnishing or '') == 'furnished' %}selected{% endif %}>Fully furnished</option></select></div>
+                        <div class="fg"><label>Parking</label><input type="text" name="parking" value="{{ prop.parking or "" }}" placeholder="e.g. 2 covered"></div>
+                        <div class="fg"><label>Facing</label><input type="text" name="facing" value="{{ prop.facing or "" }}" placeholder="East / North"></div>
+                        <div class="fg"><label>Year built</label><input type="text" name="year_built" value="{{ prop.year_built or "" }}" placeholder="2019"></div>
+                        <div class="fg s3"><label>Amenities</label><input type="text" name="amenities" value="{{ prop.amenities or "" }}" placeholder="Gym, pool, clubhouse, power backup…"></div>
+                    </div>
+                    <p class="sec">Location</p>
+                    <div class="g">
+                        <div class="fg s3"><label>Street address</label><input type="text" name="address" value="{{ prop.address or "" }}"></div>
+                        <div class="fg"><label>City</label><input type="text" name="city" value="{{ prop.city or "" }}"></div>
+                        <div class="fg"><label>State</label><input type="text" name="state" value="{{ prop.state or "" }}"></div>
+                        <div class="fg"><label>Postal code</label><input type="text" name="zip_code" value="{{ prop.zip_code or "" }}"></div>
+                        <div class="fg"><label>Latitude</label><input type="text" name="latitude" value="{{ prop.latitude or "" }}"></div>
+                        <div class="fg"><label>Longitude</label><input type="text" name="longitude" value="{{ prop.longitude or "" }}"></div>
+                    </div>
+                    <p class="sec">Assignment & seller</p>
+                    <div class="g">
+                        <div class="fg"><label>Assigned agent</label><select name="agent_id"><option value="">— Unassigned —</option>{% for a in agents %}<option value="{{ a.id }}" {% if prop.agent_id == a.id %}selected{% endif %}>{{ a.full_name }}</option>{% endfor %}</select></div>
+                        <div class="fg"><label>Seller name</label><input type="text" name="seller_name" value="{{ prop.seller_name or "" }}"></div>
+                        <div class="fg"><label>Seller phone</label><input type="text" name="seller_phone" value="{{ prop.seller_phone or "" }}"></div>
+                        <div class="fg"><label>Photos (add more keeps existing)</label><input type="file" name="photos" accept="image/*" multiple></div>
+                        <div class="fg s2"><label>Videos (add more)</label><input type="file" name="videos" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" multiple></div>
+                    </div>
 
-<div class="panel form-panel"><form method="POST" class="admin-form">
-<div class="form-section-title">Basic</div>
-<div class="form-row">
-<div class="form-group"><label>Title *</label><input name="title" value="{{ prop.title }}" required></div>
-<div class="form-group"><label>Price *</label><input type="number" name="price" step="0.01" value="{{ prop.price }}" required></div>
 </div>
-<div class="form-row">
-<div class="form-group"><label>Type</label><select name="property_type">
-{% for t in ['house','apartment','condo','townhouse','land','commercial','villa'] %}
-<option value="{{ t }}" {% if prop.property_type==t %}selected{% endif %}>{{ t|capitalize }}</option>
-{% endfor %}
-</select></div>
-<div class="form-group"><label>Status</label><select name="status">
-{% for s in ['available','under_offer','sold','rented'] %}
-<option value="{{ s }}" {% if prop.status==s %}selected{% endif %}>{{ s.replace('_',' ')|title }}</option>
-{% endfor %}
-</select></div>
+<div class="panel-ft">
+<a href="{{ url_for('admin.admin_property_detail', prop_id=prop.id) }}" class="btn-cancel">Cancel</a>
+<button type="submit" class="btn-save">Save changes</button>
 </div>
-<div class="form-group"><label>Description</label><textarea name="description">{{ prop.description or '' }}</textarea></div>
-<div class="form-section-title">Location</div>
-<div class="form-group"><label>Address</label><input name="address" value="{{ prop.address or '' }}"></div>
-<div class="form-row">
-<div class="form-group"><label>City</label><input name="city" value="{{ prop.city or '' }}"></div>
-<div class="form-group"><label>State</label><input name="state" value="{{ prop.state or '' }}"></div>
+</form>
 </div>
-<div class="form-row">
-<div class="form-group"><label>Zip</label><input name="zip_code" value="{{ prop.zip_code or '' }}"></div>
-<div class="form-group"><label>Agent</label><select name="agent_id"><option value="">—</option>{% for a in agents %}<option value="{{ a.id }}" {% if prop.agent_id==a.id %}selected{% endif %}>{{ a.full_name }}</option>{% endfor %}</select></div>
-</div>
-<div class="form-section-title">Specs</div>
-<div class="form-row">
-<div class="form-group"><label>Bedrooms</label><input type="number" name="bedrooms" value="{{ prop.bedrooms or '' }}"></div>
-<div class="form-group"><label>Bathrooms</label><input type="number" step="0.5" name="bathrooms" value="{{ prop.bathrooms or '' }}"></div>
-</div>
-<div class="form-group"><label>Area sqft</label><input type="number" step="0.01" name="area_sqft" value="{{ prop.area_sqft or '' }}"></div>
-<div class="form-actions"><button class="btn-primary" type="submit">Save Changes</button><a href="{{ url_for('admin.admin_property_detail', prop_id=prop.id) }}" class="btn-secondary">Cancel</a></div>
-</form></div>
-
 </main>
 </div>
-</body>
-</html>
+
+<div class="toast-host" id="toastHost" aria-live="polite"></div>
+<script>
+(function(){var h=document.getElementById('toastHost'),d=document.getElementById('flash-data');if(!h||!d)return;var i=d.querySelectorAll('span[data-msg]');if(!i.length)return;var e=document.createElement('div');e.className='toast-sphere';e.textContent=i[0].getAttribute('data-msg')||'Done';h.appendChild(e);requestAnimationFrame(function(){e.classList.add('show');});setTimeout(function(){e.classList.add('hide');setTimeout(function(){e.remove();},250);},2800);})();
+</script>
+
+</body></html>

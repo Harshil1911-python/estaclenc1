@@ -6,77 +6,289 @@
     <title>Estacle | Admin – Add User</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        html, body { height: 100%; }
+        .main-content { display: flex; flex-direction: column; min-height: 100vh; padding-bottom: 0 !important; }
+        .top-bar.dash-top {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 24px !important; background: #fff; border-bottom: 1px solid #e8ecf1;
+            box-shadow: none; gap: 12px; flex-wrap: wrap; flex-shrink: 0;
+        }
+        .dash-top .page-title { font-size: 17px; font-weight: 700; color: #0f172a; margin: 0; letter-spacing: -0.02em; }
+        .dash-top .page-subtitle { font-size: 12.5px; color: #64748b; margin: 2px 0 0; }
+        .btn-back {
+            display: inline-flex; align-items: center; height: 34px; padding: 0 12px;
+            background: #fff; color: #475569; border: 1px solid #e8ecf1; border-radius: 8px;
+            font-size: 12.5px; font-weight: 600; text-decoration: none;
+        }
+        .btn-back:hover { background: #f8fafc; color: #0f172a; }
+        .page-wrap { flex: 1; padding: 14px 24px 18px; display: flex; flex-direction: column; gap: 12px; width: 100%; box-sizing: border-box; }
+        .layout-split { display: grid; grid-template-columns: 1.55fr 0.95fr; gap: 12px; align-items: start; }
+        @media (max-width: 980px) { .layout-split { grid-template-columns: 1fr; } }
+        .panel {
+            background: #fff; border: 1px solid #e8ecf1; border-radius: 12px;
+            box-shadow: 0 1px 2px rgba(15,23,42,0.04); overflow: hidden;
+            display: flex; flex-direction: column;
+        }
+        .panel-hd {
+            padding: 9px 14px; border-bottom: 1px solid #f1f5f9; background: #fafbfc;
+            font-size: 12.5px; font-weight: 600; color: #0f172a;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .panel-hd span { font-weight: 500; color: #94a3b8; font-size: 11.5px; }
+        .panel-bd { padding: 12px 14px; }
+        .panel-ft {
+            padding: 9px 14px; border-top: 1px solid #f1f5f9; background: #fafbfc;
+            display: flex; gap: 8px; justify-content: flex-end;
+        }
+        .sec {
+            font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase;
+            letter-spacing: 0.04em; margin: 12px 0 8px; padding-bottom: 5px; border-bottom: 1px solid #f1f5f9;
+        }
+        .sec:first-child { margin-top: 0; }
+        .g { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 10px; }
+        .g .s2 { grid-column: span 2; }
+        .g .s3 { grid-column: 1 / -1; }
+        @media (max-width: 700px) { .g { grid-template-columns: 1fr 1fr; } .g .s2 { grid-column: span 1; } }
+        @media (max-width: 480px) { .g { grid-template-columns: 1fr; } }
+        .fg { display: flex; flex-direction: column; gap: 3px; }
+        .fg label { font-size: 11.5px; font-weight: 600; color: #475569; }
+        .fg label .r { color: #dc2626; }
+        .fg input, .fg select, .fg textarea {
+            height: 36px; padding: 0 9px; border: 1px solid #e2e8f0; border-radius: 7px;
+            font-size: 13px; font-family: inherit; color: #0f172a; outline: none;
+            box-sizing: border-box; width: 100%; background: #fff;
+        }
+        .fg textarea { height: 64px; padding: 8px 9px; resize: vertical; }
+        .fg input[type="file"] { height: auto; padding: 5px 8px; font-size: 12px; }
+        .fg input:focus, .fg select:focus, .fg textarea:focus {
+            border-color: #a5b4fc; box-shadow: 0 0 0 3px rgba(79,70,229,0.1);
+        }
+        .hint { font-size: 11px; color: #94a3b8; margin: 0; }
+        .chk { display: flex; align-items: center; gap: 7px; height: 36px; }
+        .chk input { width: 14px; height: 14px; accent-color: #4f46e5; }
+        .chk label { margin: 0; font-size: 12.5px; font-weight: 500; color: #334155; }
+        .btn-cancel, .btn-ghost {
+            height: 34px; padding: 0 12px; background: #fff; border: 1px solid #e2e8f0;
+            border-radius: 7px; font-size: 12.5px; font-weight: 600; color: #64748b;
+            cursor: pointer; font-family: inherit; text-decoration: none;
+            display: inline-flex; align-items: center;
+        }
+        .btn-cancel:hover, .btn-ghost:hover { background: #f8fafc; color: #0f172a; }
+        .btn-save {
+            height: 34px; padding: 0 14px; background: #1e1b4b; border: none;
+            border-radius: 7px; font-size: 12.5px; font-weight: 600; color: #fff;
+            cursor: pointer; font-family: inherit;
+        }
+        .btn-save:hover { background: #312e81; }
+        .format-box {
+            background: #0f172a; color: #cbd5e1; border-radius: 7px; padding: 10px 12px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 11px; line-height: 1.45; overflow-x: auto; white-space: pre;
+            margin: 0 0 8px; user-select: all;
+        }
+        .rules { margin: 0 0 10px; padding: 0 0 0 15px; font-size: 11.5px; color: #64748b; line-height: 1.5; }
+        .import-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        .import-row input[type="file"] {
+            flex: 1; min-width: 140px; height: 34px; padding: 5px 8px;
+            border: 1px solid #e2e8f0; border-radius: 7px; font-size: 12px; font-family: inherit; background: #fff;
+        }
+        .toast-host { position: fixed; left: 0; right: 0; bottom: 22px; z-index: 9999; display: flex; justify-content: center; pointer-events: none; }
+        .toast-sphere {
+            pointer-events: auto; background: #0f172a; color: #fff; padding: 11px 20px; border-radius: 999px;
+            font-size: 13px; font-weight: 500; box-shadow: 0 12px 40px rgba(15,23,42,0.35);
+            opacity: 0; transform: translateY(16px); transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+        .toast-sphere.show { opacity: 1; transform: translateY(0); }
+        .toast-sphere.hide { opacity: 0; }
+    </style>
 </head>
 <body>
 <div class="app-layout">
-    {% set active = 'add_user' %}
+    {% set active = 'users' %}
     {% include 'partials/admin_sidebar.html' %}
     <main class="main-content">
-        <header class="top-bar">
+        <header class="top-bar dash-top">
             <div>
-                <h1 class="page-title">Add New User</h1>
-                <p class="page-subtitle">Create an admin, agent, or customer account</p>
+                <h1 class="page-title">Add User</h1>
+                <p class="page-subtitle">Register a staff, agent or customer account</p>
             </div>
-            <a href="{{ url_for('admin.admin_users') }}" class="btn-secondary">Back to Users</a>
+            <a href="{{ url_for('admin.admin_users') }}" class="btn-back">← Users</a>
         </header>
+        <div class="page-wrap">
+            <div id="flash-data" style="display:none">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}{% for category, message in messages %}<span data-msg="{{ message|e }}"></span>{% endfor %}{% endif %}
+            {% endwith %}
+            </div>
+            <div class="layout-split">
+                <form method="POST" action="{{ url_for('admin.admin_add_user') }}" enctype="multipart/form-data" class="panel">
+                    <div class="panel-hd">Account registration <span>* required</span></div>
+                    <div class="panel-bd">
+                        <p class="sec">Personal</p>
+                        <div class="g">
+                            <div class="fg s2">
+                                <label for="full_name">Full name <span class="r">*</span></label>
+                                <input type="text" id="full_name" name="full_name" placeholder="As on official ID" required autocomplete="name">
+                            </div>
+                            <div class="fg">
+                                <label for="employee_id">Employee / ref ID</label>
+                                <input type="text" id="employee_id" name="employee_id" placeholder="e.g. EMP-1042">
+                            </div>
+                            <div class="fg s2">
+                                <label for="email">Work email <span class="r">*</span></label>
+                                <input type="email" id="email" name="email" placeholder="name@company.com" required autocomplete="email">
+                            </div>
+                            <div class="fg">
+                                <label for="hire_date">Start date</label>
+                                <input type="date" id="hire_date" name="hire_date">
+                            </div>
+                            <div class="fg">
+                                <label for="phone">Primary phone</label>
+                                <input type="text" id="phone" name="phone" placeholder="+91 98xxx xxxxx" autocomplete="tel">
+                            </div>
+                            <div class="fg">
+                                <label for="alt_phone">Alternate phone</label>
+                                <input type="text" id="alt_phone" name="alt_phone" placeholder="WhatsApp / secondary">
+                            </div>
+                            <div class="fg">
+                                <label for="timezone">Timezone</label>
+                                <select id="timezone" name="timezone">
+                                    <option value="">— Select —</option>
+                                    <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                                    <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+                                    <option value="America/New_York">America/New_York (ET)</option>
+                                    <option value="Europe/London">Europe/London (GMT)</option>
+                                    <option value="Asia/Singapore">Asia/Singapore</option>
+                                </select>
+                            </div>
+                        </div>
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category }}">{{ message }}</div>{% endfor %}{% endif %}
-        {% endwith %}
+                        <p class="sec">Role & employment</p>
+                        <div class="g">
+                            <div class="fg">
+                                <label for="role">System role <span class="r">*</span></label>
+                                <select id="role" name="role" required>
+                                    <option value="agent">Agent</option>
+                                    <option value="customer">Customer</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                            <div class="fg">
+                                <label for="job_title">Job title</label>
+                                <input type="text" id="job_title" name="job_title" placeholder="Senior Sales Associate">
+                            </div>
+                            <div class="fg">
+                                <label for="department">Department / team</label>
+                                <input type="text" id="department" name="department" placeholder="Sales · Leasing · Ops">
+                            </div>
+                            <div class="fg">
+                                <label for="license_no">License / RERA no.</label>
+                                <input type="text" id="license_no" name="license_no" placeholder="For licensed agents">
+                            </div>
+                            <div class="fg">
+                                <label for="commission_rate">Default commission %</label>
+                                <input type="number" id="commission_rate" name="commission_rate" step="0.01" min="0" max="100" placeholder="e.g. 2.5">
+                            </div>
+                            <div class="fg">
+                                <label>Login access</label>
+                                <div class="chk">
+                                    <input type="checkbox" id="is_active" name="is_active" value="1" checked>
+                                    <label for="is_active">Account active</label>
+                                </div>
+                            </div>
+                        </div>
 
-        <div class="form-page-hero">
-            <h2>Account setup</h2>
-            <p>Fill in the details below. Agents can manage properties and clients. Customers can browse listings. Admins have full access.</p>
-        </div>
+                        <p class="sec">Address</p>
+                        <div class="g">
+                            <div class="fg s3">
+                                <label for="address">Street address</label>
+                                <input type="text" id="address" name="address" placeholder="Building, street, area">
+                            </div>
+                            <div class="fg">
+                                <label for="city">City</label>
+                                <input type="text" id="city" name="city" placeholder="City">
+                            </div>
+                            <div class="fg">
+                                <label for="state">State / region</label>
+                                <input type="text" id="state" name="state" placeholder="State">
+                            </div>
+                            <div class="fg">
+                                <label for="postal_code">Postal code</label>
+                                <input type="text" id="postal_code" name="postal_code" placeholder="PIN / ZIP">
+                            </div>
+                            <div class="fg s2">
+                                <label for="country">Country</label>
+                                <input type="text" id="country" name="country" placeholder="India" value="India">
+                            </div>
+                        </div>
 
-        <div class="panel form-panel">
-            <form method="POST" class="admin-form">
-                <div class="form-section-title">Personal Information</div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="full_name">Full Name *</label>
-                        <input type="text" id="full_name" name="full_name" placeholder="e.g. John Smith" required>
+                        <p class="sec">Security & profile</p>
+                        <div class="g">
+                            <div class="fg s2">
+                                <label for="password">Temporary password <span class="r">*</span></label>
+                                <input type="password" id="password" name="password" placeholder="Min. 6 characters" required minlength="6" autocomplete="new-password">
+                                <p class="hint">Share securely; user should change on first login</p>
+                            </div>
+                            <div class="fg">
+                                <label for="avatar">Photo</label>
+                                <input type="file" id="avatar" name="avatar" accept="image/png,image/jpeg,image/gif,image/webp">
+                            </div>
+                            <div class="fg s3">
+                                <label for="notes">Internal notes</label>
+                                <textarea id="notes" name="notes" placeholder="Onboarding notes, reporting manager, desk location…"></textarea>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="email">Email (Estacle Id) *</label>
-                        <input type="email" id="email" name="email" placeholder="name@estacle.com" required>
-                        <span class="form-hint">This will be used to sign in</span>
+                    <div class="panel-ft">
+                        <a href="{{ url_for('admin.admin_users') }}" class="btn-cancel">Cancel</a>
+                        <button type="submit" class="btn-save">Create account</button>
+                    </div>
+                </form>
+
+                <div class="panel">
+                    <div class="panel-hd">Bulk import <span>CSV · XLSX</span></div>
+                    <div class="panel-bd">
+                        <p class="sec" style="margin-top:0">Column format (click to copy)</p>
+                        <div class="format-box" id="formatBox">full_name,email,role,phone,password
+John Agent,john.agent@estacle.com,agent,+1-555-0101,agent123
+Sarah Customer,sarah@estacle.com,customer,+1-555-0102,customer123
+Admin Two,admin2@estacle.com,admin,,admin12345</div>
+                        <ul class="rules">
+                            <li>Header row required and case-sensitive</li>
+                            <li>role: admin · agent · customer</li>
+                            <li>password ≥ 6 chars · unique email · phone optional</li>
+                            <li>Also printed in the server terminal on this page</li>
+                        </ul>
+                        <p class="sec">Upload</p>
+                        <form method="POST" action="{{ url_for('admin.admin_import_users') }}" enctype="multipart/form-data" class="import-row">
+                            <input type="file" name="import_file" accept=".csv,.xlsx,.xls" required>
+                            <a href="{{ url_for('admin.admin_users_import_template') }}" class="btn-ghost">Template</a>
+                            <button type="submit" class="btn-save">Import</button>
+                        </form>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="phone">Phone</label>
-                        <input type="text" id="phone" name="phone" placeholder="+1-555-0000">
-                    </div>
-                    <div class="form-group">
-                        <label for="role">Role *</label>
-                        <select id="role" name="role" required>
-                            <option value="agent">Agent — manage listings & clients</option>
-                            <option value="customer">Customer — browse & book viewings</option>
-                            <option value="admin">Admin — full platform access</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-section-title">Security</div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="password">Password *</label>
-                        <input type="password" id="password" name="password" placeholder="Minimum 6 characters" required minlength="6">
-                    </div>
-                    <div class="form-group">
-                        <label for="password2">Confirm Password</label>
-                        <input type="password" id="password2" name="password2" placeholder="Re-enter password" minlength="6">
-                    </div>
-                </div>
-
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary">Create User</button>
-                    <a href="{{ url_for('admin.admin_users') }}" class="btn-secondary">Cancel</a>
-                </div>
-            </form>
+            </div>
         </div>
     </main>
 </div>
+<div class="toast-host" id="toastHost" aria-live="polite"></div>
+<script>
+document.getElementById('formatBox').addEventListener('click', function() {
+    var r = document.createRange(); r.selectNodeContents(this);
+    var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+});
+(function() {
+    var host = document.getElementById('toastHost'), data = document.getElementById('flash-data');
+    if (!host || !data) return;
+    var items = data.querySelectorAll('span[data-msg]');
+    if (!items.length) return;
+    var el = document.createElement('div'); el.className = 'toast-sphere';
+    el.textContent = items[0].getAttribute('data-msg') || 'Done';
+    host.appendChild(el);
+    requestAnimationFrame(function() { el.classList.add('show'); });
+    setTimeout(function() { el.classList.add('hide'); setTimeout(function() { el.remove(); }, 250); }, 2800);
+})();
+</script>
 </body>
 </html>
