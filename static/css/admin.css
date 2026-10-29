@@ -507,7 +507,9 @@ td { padding: 12px 16px; border-top: 1px solid #f1f5f9; color: #334155; }
     color: #0f172a;
 }
 
-.nav-dropdown.open > .nav-dropdown-toggle {
+/* "open" only means expanded; "has-active" means the current page lives in this group.
+   Keeping them separate stops several expanded groups from all looking selected. */
+.nav-dropdown.has-active > .nav-dropdown-toggle {
     color: #2563eb;
     background: #eff6ff;
     font-weight: 600;
@@ -641,3 +643,62 @@ td { padding: 12px 16px; border-top: 1px solid #f1f5f9; color: #334155; }
 .badge-under_contract { background: #dbeafe; color: #1d4ed8; }
 .badge-closed { background: #d1fae5; color: #047857; }
 .badge-lost { background: #f1f5f9; color: #64748b; }
+
+
+/* ========== PAGE TRANSITIONS / PERSISTENT SHELL (see static/js/app-nav.js) ========== */
+
+/* Reserve the scrollbar so short and tall pages do not shift the layout sideways. */
+html { scrollbar-gutter: stable; }
+
+/* Only the content region animates; the sidebar is a sibling and is never touched.
+   "backwards" fill (not "both") so no transform is left behind after the animation. */
+@keyframes estacle-page-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+.app-layout > :not(.sidebar):not(script):not(style) {
+    animation: estacle-page-in 200ms cubic-bezier(0.22, 0.61, 0.36, 1) backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+    .app-layout > :not(.sidebar):not(script):not(style) { animation: none; }
+}
+
+/* Thin progress line, only shown if a navigation takes longer than ~120ms. */
+html.nav-loading { cursor: progress; }
+html.nav-loading::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0;
+    height: 2px;
+    width: 40%;
+    background: #3b82f6;
+    z-index: 10000;
+    animation: estacle-nav-progress 1s ease-in-out infinite;
+}
+@keyframes estacle-nav-progress {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(260%); }
+}
+@media (prefers-reduced-motion: reduce) {
+    html.nav-loading::before { animation: none; width: 100%; }
+}
+
+/* Shown when an asynchronous navigation cannot be completed. */
+#estacle-nav-error {
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    max-width: 360px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border-left: 3px solid #ef4444;
+    background: #fff;
+    color: #0f172a;
+    font-size: 13.5px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+    z-index: 10001;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+#estacle-nav-error.show { opacity: 1; pointer-events: auto; }
